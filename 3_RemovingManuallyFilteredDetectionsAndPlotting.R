@@ -43,8 +43,7 @@ ipak(requiredPackages)
 # > Connect to access database ####
 
 # Identify channel to connect to database
-channel <- odbcDriverConnect("Driver = {Microsoft Access Driver (*.mdb, *.accdb)};
-                             DBQ = ../../Databases/WinooskiSalmonTelemetryDatabase.accdb")
+channel <- odbcDriverConnect("Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=../../Databases/WinooskiSalmonTelemetryDatabase.accdb")
 
 # Look at tables and queries within database
 sqlTables(channel)
