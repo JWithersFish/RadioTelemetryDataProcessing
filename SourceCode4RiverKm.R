@@ -24,7 +24,7 @@ CalcRivKm <- function(RecData,
                       Latitude = "Latitude", 
                       Longitude = "Longitude", 
                       PointCRS =  sp::CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"),
-                      Path2River = "./", 
+                      Path2River = "../", 
                       RiverShape, 
                       OutputCRS = sp::CRS("+init=epsg:5072")) {
   
@@ -132,30 +132,30 @@ RiverKmPlot <- function(RecData,
   
     # > Create folders for Figures and Tables ####
     # Figures folder
-    if(!dir.exists(paste("./Figures"))){
-      dir.create(paste("./Figures"))
+    if(!dir.exists(paste("../Figures"))){
+      dir.create(paste("../Figures"))
       }
     
     # Figures folder subdirectory
-    if(!dir.exists(paste("./Figures/PreClean"))){
-      dir.create(paste("./Figures/PreClean"))
+    if(!dir.exists(paste("../Figures/PreClean"))){
+      dir.create(paste("../Figures/PreClean"))
       } 
   
     # Tables folder
-    if(!dir.exists(paste("./Tables"))){
-      dir.create(paste("./Tables"))
+    if(!dir.exists(paste("../Tables"))){
+      dir.create(paste("../Tables"))
       }
     
     # Tables folder subdirectory
-    if(!dir.exists(paste("./Tables/PreClean"))){
-      dir.create(paste("./Tables/PreClean"))
+    if(!dir.exists(paste("../Tables/PreClean"))){
+      dir.create(paste("../Tables/PreClean"))
       } 
   
   
     
     # Write all data to single df
     fwrite(RecData,
-           "./Tables/PreClean/DF.Pre_Clean.csv",
+           "../Tables/PreClean/DF.Pre_Clean.csv",
            sep = ",",
            col.names = TRUE,
            row.names = FALSE)
@@ -203,13 +203,13 @@ RiverKmPlot <- function(RecData,
                color = "Time of Day",
                shape = "Detection type")
         
-        ggsave(filename = paste("./Figures/PreClean/Fish", fish[i],
+        ggsave(filename = paste("../Figures/PreClean/Fish", fish[i],
                                 ".png", 
                                 sep = ""), 
                plot = myplot)
         
         fwrite(x = tempData,   # write each subsetted fish dataframe out to csv
-               file = paste("./Tables/PreClean/Fish",
+               file = paste("../Tables/PreClean/Fish",
                             fish[i],# use sep ="\t" for tab delimited and "," for comma delim
                             ".csv", 
                             sep = ""), 
@@ -226,30 +226,30 @@ RiverKmPlot <- function(RecData,
   if(Clean == "Post"){
     # > Create folders for Figures and Tables ####
     # Figures folder
-    if(!dir.exists(paste("./Figures"))){
-      dir.create(paste("./Figures"))
+    if(!dir.exists(paste("../Figures"))){
+      dir.create(paste("../Figures"))
       }
     
     # Figures folder subdirectory
-    if(!dir.exists(paste("./Figures/PostClean"))){
-      dir.create(paste("./Figures/PostClean"))
+    if(!dir.exists(paste("../Figures/PostClean"))){
+      dir.create(paste("../Figures/PostClean"))
       }
     
     # Tables folder
-    if(!dir.exists(paste("./Tables"))){
-      dir.create(paste("./Tables"))
+    if(!dir.exists(paste("../Tables"))){
+      dir.create(paste("../Tables"))
       }
     
     # Tables folder subdirectory
-    if(!dir.exists(paste("./Tables/PostClean"))){
-      dir.create(paste("./Tables/PostClean"))
+    if(!dir.exists(paste("../Tables/PostClean"))){
+      dir.create(paste("../Tables/PostClean"))
       } 
     
     
     
     # Write all data to single df
     fwrite(RecData,
-           "./Tables/PostClean/DF.Post_Clean.csv",
+           "../Tables/PostClean/DF.Post_Clean.csv",
            sep = ",",
            col.names = TRUE,
            row.names = FALSE)
@@ -297,14 +297,14 @@ RiverKmPlot <- function(RecData,
                color = "Time of Day",
                shape = "Detection type")
       
-        ggsave(filename = paste("./Figures/PostClean/Fish",
+        ggsave(filename = paste("../Figures/PostClean/Fish",
                                 fish[i],
                                 ".png",
                                 sep = ""),
                plot = myplot)
           
         fwrite(x = tempData,   # write each subsetted fish dataframe out to csv
-               file = paste("./Tables/PostClean/Fish",
+               file = paste("../Tables/PostClean/Fish",
                             fish[i],# use sep ="\t" for tab delimited and "," for comma delim
                             ".csv",
                             sep = ""),

@@ -44,7 +44,7 @@ ipak(requiredPackages)
 
 # Identify channel to connect to database
 channel <- odbcDriverConnect("Driver = {Microsoft Access Driver (*.mdb, *.accdb)};
-                             DBQ = ../Databases/WinooskiSalmonTelemetryDatabase.accdb")
+                             DBQ = ../../Databases/WinooskiSalmonTelemetryDatabase.accdb")
 
 # Look at tables and queries within database
 sqlTables(channel)
@@ -55,12 +55,12 @@ Tags.0 <- as.data.table(sqlFetch(channel, "qry_FishList")) # Import list of tags
 odbcClose(channel)
 
 
-DF.Pre_Clean.0 <- fread("./Tables/PreClean/DF.Pre_Clean.csv", 
+DF.Pre_Clean.0 <- fread("../Tables/PreClean/DF.Pre_Clean.csv", 
                         header = TRUE, 
                         stringsAsFactors = FALSE)
 
 # > Manually filter ####
-DF.FilteredPts.0 <- fread("./Tables/ManuallyFilteredDetections.csv", 
+DF.FilteredPts.0 <- fread("../Tables/ManuallyFilteredDetections.csv", 
                           header = TRUE, 
                           stringsAsFactors = FALSE) 
 
@@ -169,7 +169,7 @@ Tags.Rec <- Tags.2 %>%
   CalcRivKm(., PointCRS = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"), 
             Latitude = "RecoveredLat", 
             Longitude = "RecoveredLong", 
-            Path2River = "./ArcGIS",
+            Path2River = "../ArcGIS",
             RiverShape = "WinooskiRiver_MouthToBolton_UTM18",
             OutputCRS = CRS("+proj=utm +zone=18 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")) %>% 
   mutate(DtTmRcv = as.POSIXct(DtTmRcv,
@@ -263,13 +263,13 @@ for(i in 1:length(fish)){
                  shape = "star",
                  size = 1.75)
     
-    ggsave(filename = paste("./Figures/PreClean/Fish", 
+    ggsave(filename = paste("../Figures/PreClean/Fish", 
                             fish[i], "_", tempData$Sex[1], ".png", sep = ""), 
            plot = myplot)
     
     
     fwrite(x = tempData,   # write each subsetted fish dataframe out to csv
-           file = paste("./Tables/PreClean/Fish", 
+           file = paste("../Tables/PreClean/Fish", 
                         fish[i],"_", tempData$Sex[1], # use sep ="\t" for tab delimited and "," for comma delim
                         ".csv", sep = ""), sep = ",", col.names = TRUE,
            row.names = FALSE)

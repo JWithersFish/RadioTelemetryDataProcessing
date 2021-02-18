@@ -40,7 +40,7 @@ ipak(requiredPackages)
 
 
 # Import clean data ----
-DF.Clean.0 <- fread("./Tables/PostClean/DF.Clean.csv", 
+DF.Clean.0 <- fread("../Tables/PostClean/DF.Clean.csv", 
                      header = TRUE, stringsAsFactors = FALSE)
 
 
@@ -90,10 +90,10 @@ LastDetSum.1 <- LastDetSum %>%
 
 
 # Add Trib data ----
-RiverUTM <- line2network(path = "./ArcGIS", #Without Tributaries
+RiverUTM <- line2network(path = "../ArcGIS", #Without Tributaries
                          layer = "WinooskiRiverKmLine_UTM18", tolerance = 90)
 
-TribDist <- pointshp2segvert(path = "./ArcGIS",
+TribDist <- pointshp2segvert(path = "../ArcGIS",
                              layer = "Trib_Coords", rivers = RiverUTM)
 
 for (i in 1:nrow(TribDist)){
@@ -202,7 +202,7 @@ tagList(map)
 
 ### River Kilometer for each detection to date
 ```{r figurename, echo=FALSE, fig.align = 'center', out.width = '90%'}
-files <- list.files(path = "./Figures/PostClean/", 
+files <- list.files(path = "../Figures/PostClean/", 
                     pattern = "*.png",
                     full.names = TRUE)
 
@@ -215,7 +215,7 @@ knitr::include_graphics(files)
 
 # Import receiver files ####
 # Read in files for 2020
-FilesGMT5 <- list.files(path = "./RawReceiverDownloads2020/GMTPlus5",
+FilesGMT5 <- list.files(path = "../RawReceiverDownloads2020/GMTPlus5",
                         pattern = "*.txt") # This creates a list of all files in directory
 
 FilesGMT5a <- data.frame(Files = FilesGMT5) %>% 
@@ -226,8 +226,8 @@ FilesGMT5a <- data.frame(Files = FilesGMT5) %>%
 
 df.GMT5Files <- NULL # Create empty shell df to drop files into
 for (i in 1:length(FilesGMT5a)){
-  x1 <- read_fwf(paste("./RawReceiverDownloads2020/GMTPlus5/", FilesGMT5a[i], sep = ""),
-                 fwf_empty(paste("./RawReceiverDownloads2020/GMTPlus5/", FilesGMT5a[i], sep = ""),
+  x1 <- read_fwf(paste("../RawReceiverDownloads2020/GMTPlus5/", FilesGMT5a[i], sep = ""),
+                 fwf_empty(paste("../RawReceiverDownloads2020/GMTPlus5/", FilesGMT5a[i], sep = ""),
                            col_names = c("Date", "Time", "Site", "Ant", "Freq", 
                                          "Type", "Code", "Power")),
                  col_types = c(Date  = "D", Time = "t", Site = "d", Ant = "d",
@@ -242,7 +242,7 @@ for (i in 1:length(FilesGMT5a)){
 }
 
 # > Read txt files with GMT +4 ####
-# FilesGMT4 <- list.files(path = "./RawReceiverDownloads2020",
+# FilesGMT4 <- list.files(path = "../RawReceiverDownloads2020",
 #                         pattern="*.txt") # This creates a list of all files in directory
 # 
 # FilesGMT4a <- data.frame(Files = FilesGMT4) %>% 
@@ -253,8 +253,8 @@ for (i in 1:length(FilesGMT5a)){
 # 
 # df.GMT4Files <- NULL
 # for (j in 1:length(FilesGMT4a)){
-#   y1 <- read_fwf(paste("./RawReceiverDownloads2020/", FilesGMT4a[j], sep = ""),
-#                  fwf_empty(paste("./RawReceiverDownloads2020/", FilesGMT4a[j], sep = ""),
+#   y1 <- read_fwf(paste("../RawReceiverDownloads2020/", FilesGMT4a[j], sep = ""),
+#                  fwf_empty(paste("../RawReceiverDownloads2020/", FilesGMT4a[j], sep = ""),
 #                            col_names = c("Date", "Time", "Site", "Ant", "Freq", 
 #                                          "Type", "Code", "Power")),
 #                  col_types = c(Date  = "D", Time = "t", Site = "d", Ant = "d",
@@ -385,7 +385,7 @@ Sites <- df.Rec.2 %>%
 #     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 #   
 #   
-#   ggsave(filename = paste("./plots/", Sites[i], ".png", sep = ""),
+#   ggsave(filename = paste("../plots/", Sites[i], ".png", sep = ""),
 #          plot = myplot.1)
 # }
 

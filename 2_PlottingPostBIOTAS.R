@@ -47,7 +47,7 @@ ipak(requiredPackages)
 
 # Identify channel to connect to database
 channel <- odbcDriverConnect("Driver = {Microsoft Access Driver (*.mdb, *.accdb)};
-                             DBQ = ../Databases/WinooskiSalmonTelemetryDatabase.accdb")
+                             DBQ = ../../Databases/WinooskiSalmonTelemetryDatabase.accdb")
 
 # Look at tables and queries within database
 sqlTables(channel)
@@ -64,7 +64,7 @@ odbcClose(channel)
 
 # List all SQL databases post BIOTAS
 
-SQLDBs <- list.files(path = "./1_CleaningWithAbtas/Python/Data/",
+SQLDBs <- list.files(path = "../1_CleaningWithAbtas/Python/Data/",
                      pattern = "*.db", full.names = FALSE)
 
 # Import desired tables from SQL databases and append
@@ -86,7 +86,7 @@ system.time({
     .verbose = TRUE
   ) %dopar% {
     # Connect to BIOTAS SQL Database
-    con <- DBI::dbConnect(RSQLite::SQLite(), paste("./1_CleaningWithAbtas/Python/Data/", # Connect to SQL database
+    con <- DBI::dbConnect(RSQLite::SQLite(), paste("../1_CleaningWithAbtas/Python/Data/", # Connect to SQL database
                                                    SQLDBs[i], sep = ""))
     
     # Extract name of table with highest iteration
@@ -139,7 +139,7 @@ DF.1 <- DF.0 %>%
 
 # Receiver River Km ----
 # Import Receiver Coordinate csv
-ReceiverDist.0 <- read.csv("./ArcGIS/Winooski2019RiverDistances.csv", 
+ReceiverDist.0 <- read.csv("../ArcGIS/Winooski2019RiverDistances.csv", 
                            header = TRUE, 
                            stringsAsFactors = FALSE) %>% 
   dplyr::select(Site, SiteName, Latitude, Longitude)
@@ -149,7 +149,7 @@ ReceiverDist <- CalcRivKm(ReceiverDist.0,
                           PointCRS = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"),
                           Latitude = "Latitude", 
                           Longitude = "Longitude",
-                          Path2River = "./ArcGIS", 
+                          Path2River = "../ArcGIS", 
                           RiverShape = "WinooskiRiver_MouthToBolton_UTM18",
                           OutputCRS = CRS("+proj=utm +zone=18 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0"))
 
@@ -169,7 +169,7 @@ DF.2 <- ReceiverDist %>% # NOTE THAT Decimal places for the lat and long are bei
 
 # > Import tributary coords ####
 # Import tributary coords
-Tribs <- read.csv("./ArcGIS/WinooskiRiver_UTM18TributaryConfluences.csv", 
+Tribs <- read.csv("../ArcGIS/WinooskiRiver_UTM18TributaryConfluences.csv", 
                   header = TRUE, 
                   stringsAsFactors = FALSE)
 
@@ -178,7 +178,7 @@ TribDist.1 <- CalcRivKm(Tribs,
                         PointCRS = CRS("+proj=utm +zone=18 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0"),
                         Latitude = "Latitude",
                         Longitude = "Longitude",
-                        Path2River = "./ArcGIS",
+                        Path2River = "../ArcGIS",
                         RiverShape = "WinooskiRiver_MouthToBolton_UTM18",
                         OutputCRS = CRS("+proj=utm +zone=18 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")) %>% 
   filter(STREAM_ORD > 2) %>% # Filter out small order streams
@@ -231,7 +231,7 @@ Float.Dist <- CalcRivKm(RecData = Float.1,
                         PointCRS = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"),
                         Latitude = "DetLat",
                         Longitude = "DetLong",
-                        Path2River = "./ArcGIS",
+                        Path2River = "../ArcGIS",
                         RiverShape = "WinooskiRiver_MouthToBolton_UTM18",
                         OutputCRS = CRS("+proj=utm +zone=18 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0"))
 
@@ -362,7 +362,7 @@ Tags.Rec <- Tags.2 %>%
   CalcRivKm(., PointCRS = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"), 
             Latitude = "RecoveredLat", 
             Longitude = "RecoveredLong", 
-            Path2River = "./ArcGIS",
+            Path2River = "../ArcGIS",
             RiverShape = "WinooskiRiver_MouthToBolton_UTM18",
             OutputCRS = CRS("+proj=utm +zone=18 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")) %>% 
   mutate(DtTmRcv = as.POSIXct(DtTmRcv,
@@ -395,7 +395,7 @@ gc()
 
 
 # Write all data to single df
-fwrite(DF.6, "./Tables/PreClean/DF.Pre_Clean.csv", 
+fwrite(DF.6, "../Tables/PreClean/DF.Pre_Clean.csv", 
        sep = ",", 
        col.names = TRUE, 
        row.names = FALSE)
@@ -486,13 +486,13 @@ for(i in 1:length(fish)){
                  shape = "star",
                  size = 1.75)
     
-    ggsave(filename = paste("./Figures/PreClean/Fish", 
+    ggsave(filename = paste("../Figures/PreClean/Fish", 
                             fish[i], "_", tempData$Sex[1], ".png", sep = ""), 
            plot = myplot)
     
     
     fwrite(x = tempData,   # write each subsetted fish dataframe out to csv
-           file = paste("./Tables/PreClean/Fish", 
+           file = paste("../Tables/PreClean/Fish", 
                         fish[i],"_", tempData$Sex[1], # use sep ="\t" for tab delimited and "," for comma delim
                         ".csv", sep = ""), sep = ",", col.names = TRUE,
            row.names = FALSE)
@@ -505,8 +505,8 @@ for(i in 1:length(fish)){
 
 # # Power Plots----
 # # Create Figures folder subdirectory
-# if(!dir.exists(paste("./Figures/PreClean/Powerplots"))){
-#   dir.create(paste("./Figures/PreClean/Powerplots"))
+# if(!dir.exists(paste("../Figures/PreClean/Powerplots"))){
+#   dir.create(paste("../Figures/PreClean/Powerplots"))
 # }
 # 
 # for (i in 1:length(fish)){
@@ -526,7 +526,7 @@ for(i in 1:length(fish)){
 #     theme_bw() +
 #     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 # 
-#   ggsave(filename = paste("./Figures/PreClean/Powerplots/Power_Fish", fish[i],
+#   ggsave(filename = paste("../Figures/PreClean/Powerplots/Power_Fish", fish[i],
 #                           ".png", sep = ""), plot = myplot)
 # }
 
@@ -536,8 +536,8 @@ for(i in 1:length(fish)){
 
 # Create shapefiles of each fish's detections ----
 ## Create shapefile folder subdirectory
-# if(!dir.exists(paste("./ArcGIS/PreCleanFishCoords"))){
-#   dir.create(paste("./ArcGIS/PreCleanFishCoords"))
+# if(!dir.exists(paste("../ArcGIS/PreCleanFishCoords"))){
+#   dir.create(paste("../ArcGIS/PreCleanFishCoords"))
 # } 
 # 
 # for(i in 1:length(fish)){ # loop through data by Transmitter IDs
@@ -548,7 +548,7 @@ for(i in 1:length(fish)){
 #   fishGIS.3 <- SpatialPointsDataFrame(coords = fishGIS.2, data = fishGIS.2,
 #                                       proj4string = gcsWGS84)   # Now make data spatially aware using data and specifying coords to become spatially aware
 # 
-#   writeOGR(fishGIS.3, dsn = "./ArcGIS/PreCleanFishCoords",
+#   writeOGR(fishGIS.3, dsn = "../ArcGIS/PreCleanFishCoords",
 #            layer = paste("TotalDetections", fish[i], sep = "_"),
 #            driver = "ESRI Shapefile",overwrite_layer=TRUE) #Now write out to shape file
 # }
