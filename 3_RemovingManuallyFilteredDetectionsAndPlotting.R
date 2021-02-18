@@ -115,7 +115,29 @@ DF.Pre_Clean.1 <- left_join(DF.Pre_Clean.0,
 # 
 #   ncol = 2)
 
+# Calc River dist for Tribs ----
 
+
+
+# > Import tributary coords ####
+# Import tributary coords
+Tribs <- read.csv("../ArcGIS/WinooskiRiver_UTM18TributaryConfluences.csv", 
+                  header = TRUE, 
+                  stringsAsFactors = FALSE)
+
+# Calculate river distance for all tributaries, Color code for plotting purposes, and filter only stream orders > 2
+TribDist.1 <- CalcRivKm(Tribs,
+                        PointCRS = CRS("+proj=utm +zone=18 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0"),
+                        Latitude = "Latitude",
+                        Longitude = "Longitude",
+                        Path2River = "../ArcGIS",
+                        RiverShape = "WinooskiRiver_MouthToBolton_UTM18",
+                        OutputCRS = CRS("+proj=utm +zone=18 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")) %>% 
+  filter(STREAM_ORD > 2) %>% # Filter out small order streams
+  mutate(Trib_Color = case_when(STREAM_ORD == 3 ~ "#6BAED6", # Color code stream by stream_order
+                                STREAM_ORD == 4 ~ "#2171B5",
+                                STREAM_ORD == 5 ~ "#08306B",
+                                TRUE ~ "white"))
 
 
 
