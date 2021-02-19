@@ -472,10 +472,8 @@ for(i in 1:length(fish)){
       #   28.54120, 29.14046, 49.19853, 
       #   49.41669, 55.81481, 55.94962, 56.54053, 
       #   61.28562, 66.61284), 
-      unique(DF.6 %>% # These are river distances of receivers derived from snapping to river line
-               filter(Site != "Float") %>% 
-               dplyr::select(River.Km) %>% 
-               pull()),
+      c(3.283793, 15.565960, 16.579020, 18.700732, 18.839175, 28.581155, 29.166349, 
+        49.415475, 49.606572, 55.928899, 55.998692, 56.771230, 61.491209, 66.822979),
         color = "gray25", 
         size = .1, 
         linetype = "dashed") +
