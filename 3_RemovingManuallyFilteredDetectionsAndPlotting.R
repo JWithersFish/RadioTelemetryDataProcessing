@@ -203,7 +203,11 @@ Tags.Rec <- Tags.2 %>%
 # make list of all IDs
 fish <- unique(DF.Clean.1$TagID) 
 
-
+# Write csv of all cleaned data to disk
+fwrite(DF.Clean.1, "../Tables/PostClean/DF.Clean.csv", 
+       sep = ",", 
+       col.names = TRUE, 
+       row.names = FALSE)
 
 system.time({
 for(i in 1:length(fish)){
@@ -218,10 +222,10 @@ for(i in 1:length(fish)){
                  size = 1.25) +
       scale_shape_manual(values = c("Fixed" = 16, 
                                     "Active" = 17)) +
-      scale_color_manual(values = c("Day " = "#D55E00",
-                                    "Night " = "#000000",
-                                    "Night Huntinton" = "#999999",
-                                    "Day Huntinton" = "#CC79A7")) +
+      scale_color_manual(values = c("Day" = "#D55E00",
+                                    "Night" = "#000000",
+                                    "Night Huntington" = "#999999",
+                                    "Day Huntington" = "#CC79A7")) +
       scale_x_datetime(labels = date_format("%Y-%m-%d"),
                        date_breaks = "15 day",
                        limits = c(min(DF.Clean.1$Release, na.rm = TRUE), 
@@ -284,13 +288,13 @@ for(i in 1:length(fish)){
                  shape = "star",
                  size = 1.75)
     
-    ggsave(filename = paste("../Figures/PreClean/Fish", 
+    ggsave(filename = paste("../Figures/PostClean/Fish", 
                             fish[i], "_", tempData$Sex[1], ".png", sep = ""), 
            plot = myplot)
     
     
     fwrite(x = tempData,   # write each subsetted fish dataframe out to csv
-           file = paste("../Tables/PreClean/Fish", 
+           file = paste("../Tables/PostClean/Fish", 
                         fish[i],"_", tempData$Sex[1], # use sep ="\t" for tab delimited and "," for comma delim
                         ".csv", sep = ""), sep = ",", col.names = TRUE,
            row.names = FALSE)

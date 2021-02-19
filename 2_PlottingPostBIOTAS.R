@@ -381,7 +381,12 @@ DF.6 <- DF.5 %>%
                 Latitude, Longitude, Power, Site, River.Km, SiteName, sunrise, sunset, 
                 day_night, ActiveVsFixed, Riv.Sys, Plotcolor, noiseRatio, lag, lagDiff, 
                 postTrue_A, postTrue_M, consDet_A, detHist_A, fileName, hitRatio_A, test, 
-                conRecLength_A, snapdist)
+                conRecLength_A, snapdist) %>% 
+  mutate(Plotcolor = case_when(Plotcolor == "Night " ~ "Night",
+                               Plotcolor == "Day " ~ "Day",
+                               Plotcolor == "Night Huntinton" ~ "Night Huntington",
+                               Plotcolor == "Day Huntinton" ~ "Day Huntington", 
+                               TRUE ~ Plotcolor))
 
 
 
@@ -419,10 +424,10 @@ for(i in 1:length(fish)){
                  size = 1.25) +
       scale_shape_manual(values = c("Fixed" = 16, 
                                     "Active" = 17)) +
-      scale_color_manual(values = c("Day " = "#D55E00",
-                                    "Night " = "#000000",
-                                    "Night Huntinton" = "#999999",
-                                    "Day Huntinton" = "#CC79A7")) +
+      scale_color_manual(values = c("Day" = "#D55E00",
+                                    "Night" = "#000000",
+                                    "Night Huntington" = "#999999",
+                                    "Day Huntington" = "#CC79A7")) +
       scale_x_datetime(labels = date_format("%Y-%m-%d"),
                        date_breaks = "15 day",
                        limits = c(min(DF.6$Release, na.rm = TRUE), 
