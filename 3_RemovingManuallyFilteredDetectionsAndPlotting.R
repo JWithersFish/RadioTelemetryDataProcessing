@@ -238,8 +238,8 @@ for(i in 1:length(fish)){
                               # 3.26989, 15.965215, 18.718525,
                               # 28.84083, 49.30761, 56.54053, # Measured site river.km from arcGIS
                               # 61.28562, 66.61284),
-                              3.283793, 16, 18.83917, 29.16635,
-                              49.60657, 56.771230, 61.491209, 66.822979), # Pulled from snapped river.km distances
+                              3.283793, 16.579020, 18.76995, 28.87375,
+                              49.51102, 56.771230, 61.491209, 66.822979), # Pulled from snapped river.km distances
                             labels = c(
                               'BWWTP', 'Winooski One',
                               'Gorge 18',
@@ -260,6 +260,16 @@ for(i in 1:length(fish)){
       labs(x = "", y = "River Km", 
            color = "Time of Day", 
            shape = "Detection type") +
+      geom_hline(yintercept = TribDist.1$River.Km, 
+                 color = TribDist.1$Trib_Color, 
+                 size = .1, 
+                 linetype = "solid") +
+      geom_point(data = Tags.Rec %>% 
+                   filter(TagID == fish[i]),
+                 aes(x = DtTmRcv, y = River.Km),
+                 color = "#E69F00",
+                 shape = "star",
+                 size = 1.75) + 
       geom_hline(yintercept = 28.84083, 
                  color = "red", 
                  size = .1, 
@@ -274,21 +284,13 @@ for(i in 1:length(fish)){
                      49.415475, 49.606572, 55.928899, 55.998692, 56.771230, 61.491209, 66.822979),
                  color = "gray25", 
                  size = .1, 
-                 linetype = "dashed") +
-      geom_hline(yintercept = TribDist.1$River.Km, 
-                 color = TribDist.1$Trib_Color, 
-                 size = .1, 
-                 linetype = "solid") +
-      geom_point(data = Tags.Rec %>% 
-                   filter(TagID == fish[i]),
-                 aes(x = DtTmRcv, y = River.Km),
-                 color = "#E69F00",
-                 shape = "star",
-                 size = 1.75)
+                 linetype = "dashed")
     
     ggsave(filename = paste("../Figures/PostClean/Fish", 
                             fish[i], "_", tempData$Sex[1], ".png", sep = ""), 
-           plot = myplot)
+           plot = myplot,
+           width = 7, 
+           height = 5)
     
     
     fwrite(x = tempData,   # write each subsetted fish dataframe out to csv
