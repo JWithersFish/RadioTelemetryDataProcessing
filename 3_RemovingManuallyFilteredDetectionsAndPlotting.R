@@ -259,7 +259,8 @@ for(i in 1:length(fish)){
                  size = 1.75) + # Add release site and time
       labs(x = "", y = "River Km", 
            color = "Time of Day", 
-           shape = "Detection type") +
+           shape = "Detection type",
+           title = paste(fish[i])) +
       geom_hline(yintercept = TribDist.1$River.Km, 
                  color = TribDist.1$Trib_Color, 
                  size = .1, 
@@ -287,7 +288,9 @@ for(i in 1:length(fish)){
                  linetype = "dashed")
     
     ggsave(filename = paste("../Figures/PostClean/Fish", 
-                            fish[i], "_", tempData$Sex[1], ".png", sep = ""), 
+                            fish[i], "_", tempData$Sex[1],
+                            "_", substr(x = tempData$Release[1], start = 1, stop = 4), 
+                            ".png", sep = ""), 
            plot = myplot,
            width = 7, 
            height = 5)
