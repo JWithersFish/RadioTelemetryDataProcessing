@@ -27,7 +27,7 @@ requiredPackages <- c("dplyr", "lubridate", "sf", "sp",
                       "riverdist", "RODBC", "measurements",
                       "tibble", "knitr", "leaflet", "maps",
                       "data.table", "bit64", "htmltools", "xts",
-                      "dygraphs", "foreach", "readr", "kableExtra")
+                      "dygraphs", "foreach", "readr", "kableExtra", "randomcoloR")
 
 # Function to install any packages not installed
 ipak <- function(pkg){
@@ -188,22 +188,24 @@ DF.Clean %>%
 
 ```{r Map Build, echo=FALSE, include=TRUE}
 # Map most recent detections ----
+pal_seq_mapping <- data.frame(TagID = unique(as.character(LastDet$TagID)),
+                                             color = randomColor(count = length(unique(LastDet$TagID))))
+
 LastDetSum.0a <- LastDet %>% 
-  mutate(Color = case_when(Sex == "M" ~ "blue",
-                           Sex == "F" ~ "red",
-                           TRUE ~ "yellow")) #%>%
-  # filter(DetDateTime >= floor_date(Sys.Date(), "week"))
+  left_join(pal_seq_mapping, by = "TagID")
 
 map <- leaflet(LastDetSum.0a) %>% 
   addProviderTiles("Esri.WorldImagery", group = "Satellite") %>%
-  addCircleMarkers(lng = ~ Longitude, 
+  addCircleMarkers(lng = ~ Longitude,
                    lat = ~ Latitude,
-                   color = ~ Color,
-                   fill = TRUE) %>%
-     addScaleBar(position = "bottomleft") 
+                   color = ~ LastDetSum.0a$color,
+                   popup = ~ TagID,
+                   label = ~ as.character(TagID),
+                   opacity = .75) %>%
+  addScaleBar(position = "bottomleft")
 ```
 
-### Mapped Locations of Females (red) & Males (blue) over the last 2 weeks
+### Mapped Locations of tagged fish over the last 2 weeks. Each fish has a unique color associated with its detected locations
 ```{r Map, echo = FALSE, include = TRUE}
 # for printing the maps
 tagList(map)
