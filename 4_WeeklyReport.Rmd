@@ -88,6 +88,7 @@ LastDetSum.1 <- LastDetSum %>%
   mutate(Proportion = round(Salmon1 / sum(Salmon1) * 100, 2),
          Salmon = paste(Salmon1, "(", Proportion, " %)")) %>% 
   dplyr::select(River_Segment, ReleaseYear, Salmon) %>% 
+  as.data.table() %>% 
   dcast(River_Segment ~ ReleaseYear, value.var = "Salmon")
 
 
@@ -188,6 +189,7 @@ DF.Clean %>%
 
 ```{r Map Build, echo=FALSE, include=TRUE}
 # Map most recent detections ----
+set.seed(123)
 pal_seq_mapping <- data.frame(TagID = unique(as.character(LastDet$TagID)),
                                              color = randomColor(count = length(unique(LastDet$TagID))))
 
