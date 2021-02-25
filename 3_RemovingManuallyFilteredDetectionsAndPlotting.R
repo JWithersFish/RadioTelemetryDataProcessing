@@ -177,7 +177,7 @@ GMT4.Rec <- Tags.2 %>%
 
 
 
-# Add river km
+# Add river km ####
 Tags.Rec <- Tags.2 %>%
   mutate(DateTimeRecovered = with_tz(as.POSIXct(as.character(DateTimeRecovered), 
                                                 format = "%Y-%m-%d %H:%M:%S", 
@@ -197,6 +197,38 @@ Tags.Rec <- Tags.2 %>%
                               format = "%Y-%m-%d %H:%M:%S", 
                               origin = "1970-01-01", 
                               tz = "Etc/GMT+4"))
+
+
+
+
+
+# Adding recaptured tags ----
+Recap.0 <- Tags.0 %>%
+  dplyr::select(TagID, Recapture, ReleaseDateTime, ReleaseLat, ReleaseLong) %>%
+  filter(Recapture == 1) %>%
+  mutate(ReleaseRKm = 53.45484,
+         TagID = substr(x = TagID, start = 6, stop = 17))
+
+
+Recap.GMT4 <- Recap.0 %>% 
+  mutate(ReleaseDateTime = as.POSIXct(as.character(ReleaseDateTime), 
+                                      format = "%Y-%m-%d %H:%M:%S", 
+                                      origin = "1970-01-01", 
+                                      tz = "Etc/GMT+4")) %>% 
+  filter(ReleaseDateTime < as.Date("2019-11-03") | 
+           (ReleaseDateTime >= as.Date("2020-03-08") &
+              ReleaseDateTime < as.Date("2020-11-01")))
+
+Recap.1 <- Recap.0 %>%
+  mutate(ReleaseDateTime = with_tz(as.POSIXct(as.character(ReleaseDateTime), 
+                                              format = "%Y-%m-%d %H:%M:%S", 
+                                              origin = "1970-01-01", 
+                                              tz = "Etc/GMT+5"), tz = "Etc/GMT+4")) %>% 
+  filter((ReleaseDateTime >= as.Date("2019-11-03") &
+            ReleaseDateTime < as.Date("2020-03-08")) | 
+           ReleaseDateTime >= as.Date("2020-11-01")) %>%
+  bind_rows(Recap.GMT4)
+
 
 
 # Plotting ----
@@ -271,6 +303,12 @@ for(i in 1:length(fish)){
                  color = "#E69F00",
                  shape = "star",
                  size = 1.75) + 
+      geom_point(data = Recap.1 %>%
+                   filter(TagID == fish[i]),
+                 aes(x = ReleaseDateTime, y = 53.45484),
+                 color = 'green3', 
+                 shape = "star",
+                 size = 1.75) + #Add Recap date
       geom_hline(yintercept = 28.84083, 
                  color = "red", 
                  size = .1, 
