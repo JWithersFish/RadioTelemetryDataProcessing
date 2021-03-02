@@ -205,7 +205,7 @@ Tags.Rec <- Tags.2 %>%
 # Adding recaptured tags ----
 Recap.0 <- Tags.0 %>%
   dplyr::select(TagID, Recapture, ReleaseDateTime, ReleaseLat, ReleaseLong) %>%
-  filter(Recapture == 1) %>%
+  # filter(Recapture == 1) %>%
   mutate(ReleaseRKm = 53.45484,
          TagID = substr(x = TagID, start = 6, stop = 17))
 
