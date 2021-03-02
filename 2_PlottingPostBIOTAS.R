@@ -194,14 +194,60 @@ TribDist.1 <- CalcRivKm(Tribs,
 
 
 
+# Add recorded data from GPS track ####
+Mobile.Files <- list.files(path = "../../MobileReceiverDownloads/SRX800_RAW",
+                           pattern = "*.TXT") # This creates a list of all the files
+
+DF.Mobile.0 <- NULL # Create an empty dataframe
+for (i in 1:length(Mobile.Files)){
+  
+  x1 <- fread(paste("../../MobileReceiverDownloads/SRX800_RAW/", Mobile.Files[i], sep = ""),
+              skip = "ID + GPS Positions:", ) %>% # Read in each txt
+    dplyr::select(-Longitude)
+  
+  colnames(x1) <- c("Date", "Time", "Channel", "TagID", "Antenna", "Power", "Latitude", "Longitude")
+  
+  x2 <- x1 %>%
+    mutate(File = Mobile.Files[i], # Create columns for filename and rowname
+           Rownames = as.numeric(rownames(x1))) %>%
+    as.data.frame() %>%
+    slice(1 : (n()-2))
+  
+  DF.Mobile.0 <- rbind(DF.Mobile.0, x2) # Append all imported CSV's to a single df
+}
+
+DF.Mobile.1 <- DF.Mobile.0 %>%
+  group_by(File, TagID) %>%
+  arrange(desc(Power)) %>%
+  distinct(TagID, .keep_all = TRUE) %>%
+  ungroup()
+
+DF.Mobile.2 <- DF.Mobile.1 %>%
+  mutate(TagID = ifelse(Channel == "1", paste("164.380", TagID, sep = " "),
+                        ifelse(Channel == "2", paste("164.480", TagID, sep = " "),
+                               "None")),
+         DetDateTime = as.POSIXct(paste(Date, Time, sep = " "),
+                                  format = "%m/%d/%y %H:%M:%S", # Format time to EST
+                                  origin = "1970-01-01",
+                                  tz = "Etc/GMT+4"),
+         DetLat = Latitude,
+         DetLong = Longitude,
+         Power = Power) %>%
+  dplyr::select(TagID, DetDateTime, DetLat, DetLong, Power) %>%
+  filter(TagID %in% substr(Tags.0$TagID, start = 6, stop = 20)) %>% 
+  rbind(Float.0 %>% 
+          mutate(TagID = substr(as.character(TagID), start = 6, stop = 20)))
+
+
+
 # > Adjust for daylight savings ####
-Float.GMT4 <- Float.0 %>%
+Float.GMT4 <- DF.Mobile.2 %>%
   filter(DetDateTime < as.Date("2019-11-03") | 
            (DetDateTime >= as.Date("2020-03-08") &
               DetDateTime < as.Date("2020-11-01")) |
            DetDateTime >= as.Date("2021-03-14"))
 
-Float.EST <- Float.0 %>%
+Float.EST <- DF.Mobile.2 %>%
   filter((DetDateTime >= as.Date("2019-11-03") & 
             DetDateTime < as.Date("2020-03-08")) |
            DetDateTime >= as.Date("2020-11-01") & 

@@ -22,7 +22,7 @@ source("./SourceCode4RiverKm.R")
 requiredPackages <- c("dplyr", "lubridate", "sf", "sp", 
                       "rgdal", "scales", "ggplot2", "foreach","doParallel",
                       "suncalc", "riverdist", "RODBC", "measurements",
-                      "tibble", "data.table", "bit64", "gridExtra", "RODBC")
+                      "tibble", "data.table", "bit64", "gridExtra")
 
 # Function to install any packages not installed
 ipak <- function(pkg){
