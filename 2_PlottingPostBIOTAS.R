@@ -292,8 +292,7 @@ Float.2 <- Float.Dist %>%
                                   format = "%m/%d/%Y %H:%M:%S", 
                                   origin = "1970-01-01", 
                                   tz = "Etc/GMT+4")) %>%
-  filter(DetDateTime > as.POSIXct("2019-01-01 00:00:00")) %>% # Filter out any detections prior to 2019
-  mutate(TagID = substr(TagID, 6, nchar(TagID))) # Remove year from tag ID
+  filter(DetDateTime > as.POSIXct("2019-01-01 00:00:00")) # Filter out any detections prior to 2019
 
 
 
