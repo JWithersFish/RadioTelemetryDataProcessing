@@ -237,54 +237,52 @@ FilesGMT5a <- data.frame(Files = FilesGMT5) %>%
   dplyr::select(Files) %>% 
   pull()
 
+if(length(FilesGMT5a > 0)){
 df.GMT5Files <- NULL # Create empty shell df to drop files into
 for (i in 1:length(FilesGMT5a)){
-  x1 <- read_fwf(paste("../RawReceiverDownloads/GMTPlus5/", FilesGMT5a[i], sep = ""),
-                 fwf_empty(paste("../RawReceiverDownloads/GMTPlus5/", FilesGMT5a[i], sep = ""),
-                           col_names = c("Date", "Time", "Site", "Ant", "Freq", 
-                                         "Type", "Code", "Power")),
-                 col_types = c(Date  = "D", Time = "t", Site = "d", Ant = "d",
-                               Freq = "c", Type = "c", Code = "d", Power = "d"),
-                 skip = 1) 
+  x1 <- fread(paste("../RawReceiverDownloads/GMTPlus5/", FilesGMT5a[i], sep = ""))
   
   x2 <- x1 %>%
     mutate(File = FilesGMT5a[i], # Add file name
            Site = substr(FilesGMT5a[i], start = 1, stop = 3)) # Update site to filename site
   
   df.GMT5Files <- bind_rows(df.GMT5Files, x2)
+  }
 }
 
 # > Read txt files with GMT +4 ####
-# FilesGMT4 <- list.files(path = "../RawReceiverDownloads",
-#                         pattern="*.txt") # This creates a list of all files in directory
-# 
-# FilesGMT4a <- data.frame(Files = FilesGMT4) %>% 
-#   mutate(FileDate = substr(FilesGMT4, start = 6, stop = 15)) %>% 
-#   filter(FileDate > (Sys.Date() - 32)) %>% 
-#   dplyr::select(Files) %>% 
-#   pull()
-# 
-# df.GMT4Files <- NULL
-# for (j in 1:length(FilesGMT4a)){
-#   y1 <- read_fwf(paste("../RawReceiverDownloads/", FilesGMT4a[j], sep = ""),
-#                  fwf_empty(paste("../RawReceiverDownloads/", FilesGMT4a[j], sep = ""),
-#                            col_names = c("Date", "Time", "Site", "Ant", "Freq", 
-#                                          "Type", "Code", "Power")),
-#                  col_types = c(Date  = "D", Time = "t", Site = "d", Ant = "d",
-#                                Freq = "c", Type = "c", Code = "d", Power = "d"),
-#                  skip = 1) 
-#   
-#   y2 <- y1 %>%
-#     mutate(File = FilesGMT4a[j], # Add file name
-#            Site = substr(FilesGMT4a[j], start = 1, stop = 3)) # Update site to filename site 
-#   
-#   df.GMT4Files <- bind_rows(df.GMT4Files, y2)
-# }
+FilesGMT4 <- list.files(path = "../RawReceiverDownloads",
+                        pattern="*.txt") # This creates a list of all files in directory
+
+FilesGMT4a <- as.character(data.frame(Files = FilesGMT4) %>%
+  mutate(FileDate = substr(FilesGMT4, start = 6, stop = 15)) %>%
+  filter(FileDate > (Sys.Date() - 32)) %>%
+  dplyr::pull(Files)) 
+
+if(length(FilesGMT4a > 0)){
+df.GMT4Files <- NULL
+for (j in 1:length(FilesGMT4a)){
+  y1 <- fread(paste("../RawReceiverDownloads/", FilesGMT4a[j], sep = ""))
+                
+
+  y2 <- y1 %>%
+    mutate(File = FilesGMT4a[j], # Add file name
+           Site = substr(FilesGMT4a[j], start = 1, stop = 3)) # Update site to filename site
+
+  df.GMT4Files <- bind_rows(df.GMT4Files, y2)
+  }
+}
 
 # Combine dataframes
-df.all <- df.GMT5Files
+if(exists("df.GMT4Files", inherits = FALSE) & exists("df.GMT5Files", inherits = FALSE)){
+  df.all <- rbind(df.GMT4Files, df.GMT5Files)
+  } else if(exists("df.GMT4Files", inherits = FALSE) & !exists("df.GMT5Files", inherits = FALSE)){
+    df.all <- df.GMT4Files
+    } else {
+      df.all <- df.GMT5Files
+      }
 
-
+  
 # > Dedup and filter detections prior to study ####
 df.filtered <- df.all %>%
   distinct(Date, Time, Site, Ant, Freq, Type, Code, Power, .keep_all = TRUE) %>% 
