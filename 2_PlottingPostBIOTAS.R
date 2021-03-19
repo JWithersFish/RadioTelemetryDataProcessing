@@ -78,7 +78,7 @@ doParallel::registerDoParallel(cl)
 
 
 system.time({
-  DF.0 <- foreach(
+  Rec.0 <- foreach(
     i = 1:length(SQLDBs), 
     .combine = rbind,
     .packages = c("data.table", "RSQLite"),
@@ -125,7 +125,7 @@ rm(cl)
 
 
 # > Reformat and filter receiver detections ####
-DF.1 <- DF.0 %>%
+Rec.1 <- Rec.0 %>%
   filter(test == 1) %>% # Filter out only detections that are deemed true posistives from BIOTAS
   mutate(timeStamp = as.POSIXct(timeStamp, format = "%Y-%m-%d %H:%M:%S", # Format time to EST
                                 origin = "1970-01-01", 
@@ -133,6 +133,78 @@ DF.1 <- DF.0 %>%
          recID = as.character(recID)) 
 
 
+
+Rec.1_GMT5 <- Rec.1 %>% 
+  filter(fileName %in% list.files("../RawReceiverDownloads/GMTPlus5",
+                                  pattern = "*.txt")) %>% 
+  mutate(timeStamp = force_tz(timeStamp,
+                                tz = "Etc/GMT+5"), # Specify posixct is in GMT+5
+         timeStamp = with_tz(timeStamp, tzone = "Etc/GMT+4")) %>% # Format to EST
+  rbind(Rec.1 %>% 
+          filter(fileName %in% list.files("../RawReceiverDownloads/GMTPlus5",
+                                          pattern = "*.txt")))
+
+
+
+
+
+
+#### Data files cleaned between 2019 and June 2020 have been time corrected so do not need this section ###
+# # > Add filenames to rows that do not have them ####
+# Filenames <- data.frame(fileName = c(list.files("../RawReceiverDownloads/GMTPlus5",
+#                                                    pattern = "*.txt"),
+#                                         list.files("../RawReceiverDownloads",
+#                                                    pattern = "*.txt"),
+#                                         list.files("../../../2019/DataProcessing/RawReceiverDownloads/GMTPlus5",
+#                                                    pattern = "*.txt"),
+#                                         list.files("../../../2019/DataProcessing/RawReceiverDownloads",
+#                                                    pattern = "*.txt"))) %>%
+#   mutate(Site = substr(fileName, 
+#                        start = 1, 
+#                        stop = 3),
+#          DownloadDate = as.POSIXct(substr(fileName, 
+#                                           start = 6, 
+#                                           stop = 24),
+#                                    format = "%Y-%m-%d_%H_%M_%S",
+#                                    origin = "1970-01-01", 
+#                                    tz = "Etc/GMT+4"))
+# 
+# Sites <- seq(101, 114, by = 1)
+# 
+# Rec.1a <- NULL
+# for(i in 1:length(Sites)){
+#   tempData1 <- Rec.1 %>%
+#     filter(recID == Sites[i])
+#   
+#   tempData2 <- Filenames %>% 
+#     filter(Site == Sites[i]) %>% 
+#     na.omit() %>% 
+#     arrange(DownloadDate)
+#   
+#   labs <- lead(tempData2$fileName[1:length(tempData2$fileName)],
+#                order_by = tempData2$DownloadDate) %>% 
+#     na.omit()
+#   
+#   tempData3 <- tempData1 %>% 
+#     mutate(Breaks = as.character(cut(timeStamp, 
+#                         breaks = tempData2$DownloadDate,
+#                         labels = labs)),
+#            fileName = ifelse(is.na(fileName), Breaks, fileName)) %>% 
+#     dplyr::select(-Breaks)
+# 
+#   Rec.1a <- rbind(Rec.1a, tempData3)
+# }
+# 
+# 
+# Rec.1_GMT5 <- Rec.1a %>% 
+#   filter(fileName %in% c(list.files("../RawReceiverDownloads/GMTPlus5"),
+#                           list.files("../../../2019/DataProcessing/RawReceiverDownloads/GMTPlus5",
+#                                      pattern = "*.txt")))
+# 
+# Rec.1_GMT4 <- Rec.1a %>% 
+#   filter(!fileName %in% c(list.files("../RawReceiverDownloads/GMTPlus5"),
+#                           list.files("../../../2019/DataProcessing/RawReceiverDownloads/GMTPlus5",
+#                                      pattern = "*.txt")))
 
 
 
@@ -153,38 +225,10 @@ ReceiverDist <- CalcRivKm(ReceiverDist.0,
                           OutputCRS = CRS("+proj=utm +zone=18 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0"))
 
 # > Add Rec. RiverKm to df #### 
-DF.2 <- ReceiverDist %>% # NOTE THAT Decimal places for the lat and long are being removed!
+Rec.2 <- ReceiverDist %>% # NOTE THAT Decimal places for the lat and long are being removed!
   dplyr::select(Site, River.Km, SiteName, Latitude, Longitude, snapdist) %>%
-  inner_join(DF.1, # Select columns of interest
+  inner_join(Rec.1, # Select columns of interest
              by = c("Site" = "recID"))
-
-
-
-
-
-# Calc River dist for Tribs ----
-
-
-
-# > Import tributary coords ####
-# Import tributary coords
-Tribs <- read.csv("../ArcGIS/WinooskiRiver_UTM18TributaryConfluences.csv", 
-                  header = TRUE, 
-                  stringsAsFactors = FALSE)
-
-# Calculate river distance for all tributaries, Color code for plotting purposes, and filter only stream orders > 2
-TribDist.1 <- CalcRivKm(Tribs,
-                        PointCRS = CRS("+proj=utm +zone=18 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0"),
-                        Latitude = "Latitude",
-                        Longitude = "Longitude",
-                        Path2River = "../ArcGIS",
-                        RiverShape = "WinooskiRiver_MouthToBolton_UTM18",
-                        OutputCRS = CRS("+proj=utm +zone=18 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")) %>% 
-  filter(STREAM_ORD > 2) %>% # Filter out small order streams
-  mutate(Trib_Color = case_when(STREAM_ORD == 3 ~ "#6BAED6", # Color code stream by stream_order
-                                STREAM_ORD == 4 ~ "#2171B5",
-                                STREAM_ORD == 5 ~ "#08306B",
-                                TRUE ~ "white"))
 
 
 
@@ -308,7 +352,7 @@ Float.2 <- Float.Dist %>%
 
 
 # Merge with Receiver data ----
-DF.3 <- rbindlist(list(DF.2 %>%
+Rec.3 <- rbindlist(list(Rec.2 %>%
                          rename(TagID = FreqCode, DetDateTime = timeStamp),
                        Float.2),
                   fill = T)
@@ -317,9 +361,9 @@ DF.3 <- rbindlist(list(DF.2 %>%
 
 # Add day vs. night ----
 Sys.setenv(TZ = "Etc/GMT+4") # Set default timezone so function works when tz = ""
-Df.sun <- getSunlightTimes(seq.Date(min(as.Date(DF.3$DetDateTime),
+Df.sun <- getSunlightTimes(seq.Date(min(as.Date(Rec.3$DetDateTime),
                                         na.rm = TRUE),
-                                    max(as.Date(DF.3$DetDateTime),
+                                    max(as.Date(Rec.3$DetDateTime),
                                         na.rm = TRUE),
                                     by = 1),
                            keep = c("sunrise", "sunset"),
@@ -331,7 +375,7 @@ Df.sun <- getSunlightTimes(seq.Date(min(as.Date(DF.3$DetDateTime),
 
 
 # > Add day/night to df ####
-DF.4 <- DF.3 %>%
+Rec.4 <- Rec.3 %>%
   mutate(date = as_date(DetDateTime)) %>%
   left_join(Df.sun, by = "date") %>%
   mutate(day_night = if_else(DetDateTime > sunrise &
@@ -367,11 +411,11 @@ Tags.1 <- Tags.0 %>%
 
 
 # > Match detections with fishIDs ####
-DF.5 <- Tags.1 %>%
+Rec.5 <- Tags.1 %>%
   filter(substr(TagID, start = 0, stop = 4) != "2018") %>% # Remove 2018 tags
   mutate(TagID = substr(TagID, 6, length(TagID))) %>% # Remove year from tagID (Freqcode)
   dplyr::select(TagID, Release, FloyTag, Sex, TL, Weight, ClipType) %>%
-  inner_join(DF.4, by = "TagID") %>% # Match tag list with data
+  inner_join(Rec.4, by = "TagID") %>% # Match tag list with data
   dplyr::select(-date) %>%
   group_by(TagID) %>%
   filter(DetDateTime >= Release) %>% # Filter detections that occured before release of fish
@@ -427,10 +471,39 @@ Tags.Rec <- Tags.2 %>%
 
 
 
+# Calc River dist for Tribs ----
+
+
+
+# > Import tributary coords ####
+# Import tributary coords
+Tribs <- read.csv("../ArcGIS/WinooskiRiver_UTM18TributaryConfluences.csv", 
+                  header = TRUE, 
+                  stringsAsFactors = FALSE)
+
+# Calculate river distance for all tributaries, Color code for plotting purposes, and filter only stream orders > 2
+TribDist.1 <- CalcRivKm(Tribs,
+                        PointCRS = CRS("+proj=utm +zone=18 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0"),
+                        Latitude = "Latitude",
+                        Longitude = "Longitude",
+                        Path2River = "../ArcGIS",
+                        RiverShape = "WinooskiRiver_MouthToBolton_UTM18",
+                        OutputCRS = CRS("+proj=utm +zone=18 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")) %>% 
+  filter(STREAM_ORD > 2) %>% # Filter out small order streams
+  mutate(Trib_Color = case_when(STREAM_ORD == 3 ~ "#6BAED6", # Color code stream by stream_order
+                                STREAM_ORD == 4 ~ "#2171B5",
+                                STREAM_ORD == 5 ~ "#08306B",
+                                TRUE ~ "white"))
+
+
+
+
+
+
 # Plot Timeseries ----
 
 # > Plot & Write to disk ####
-DF.6 <- DF.5 %>% 
+Rec.6 <- Rec.5 %>% 
   dplyr::select(TagID, Release,  FloyTag, Sex, TL, Weight, ClipType, DetDateTime, 
                 Latitude, Longitude, Power, Site, River.Km, SiteName, sunrise, sunset, 
                 day_night, ActiveVsFixed, Riv.Sys, Plotcolor, noiseRatio, lag, lagDiff, 
@@ -446,14 +519,14 @@ DF.6 <- DF.5 %>%
 
 
 # Remove some objects and garbage clean to make space for upcoming processing
-rm(list = c("DF.0", "DF.1", "DF.2", "DF.3", "DF.4", "DF.5"))
+rm(list = c("Rec.0", "Rec.1", "Rec.2", "Rec.3", "Rec.4", "Rec.5"))
 gc()
 gc()
 
 
 
 # Write all data to single df
-fwrite(DF.6, "../Tables/PreClean/DF.Pre_Clean.csv", 
+fwrite(Rec.6, "../Tables/PreClean/DF.Pre_Clean.csv", 
        sep = ",", 
        col.names = TRUE, 
        row.names = FALSE)
@@ -461,13 +534,13 @@ fwrite(DF.6, "../Tables/PreClean/DF.Pre_Clean.csv",
 
 
 # make list of all IDs
-fish <- unique(DF.6$TagID) 
+fish <- unique(Rec.6$TagID) 
 
 
 
 system.time({
 for(i in 1:length(fish)){
-    tempData <- DF.6 %>% 
+    tempData <- Rec.6 %>% 
       filter(TagID == fish[i]) # subset data for unique fish
     
     myplot <- ggplot(data = tempData) +
@@ -484,8 +557,8 @@ for(i in 1:length(fish)){
                                     "Day Huntington" = "#CC79A7")) +
       scale_x_datetime(labels = date_format("%Y-%m-%d"),
                        date_breaks = "15 day",
-                       limits = c(min(DF.6$Release, na.rm = TRUE), 
-                                  max(DF.6$DetDateTime, na.rm = TRUE))) +
+                       limits = c(min(Rec.6$Release, na.rm = TRUE), 
+                                  max(Rec.6$DetDateTime, na.rm = TRUE))) +
       scale_y_continuous(
         name = "River Km", 
         sec.axis = sec_axis(~ ., 
@@ -569,7 +642,7 @@ for(i in 1:length(fish)){
 # 
 # for (i in 1:length(fish)){
 # 
-#   myplot <- DF.6 %>%
+#   myplot <- Rec.6 %>%
 #     filter(TagID == fish[i],
 #            Site != "Float") %>% # exclude mobile tracking data
 #     mutate(PowerBin = cut(Power, breaks = seq(from = -50, to = -125, by = -5))) %>%
@@ -577,8 +650,8 @@ for(i in 1:length(fish)){
 #     geom_point() +
 #     scale_x_datetime(labels = date_format("%Y-%m-%d"),
 #                      # date_breaks = "15 day",
-#                      # limits = c(min(DF.6$Release, na.rm = TRUE),
-#                      #            max(DF.6$DetDateTime, na.rm = TRUE))
+#                      # limits = c(min(Rec.6$Release, na.rm = TRUE),
+#                      #            max(Rec.6$DetDateTime, na.rm = TRUE))
 #                      ) +
 #     labs(x = "Date", color = "Power", y = "Site") +
 #     theme_bw() +
@@ -599,7 +672,7 @@ for(i in 1:length(fish)){
 # } 
 # 
 # for(i in 1:length(fish)){ # loop through data by Transmitter IDs
-#   fishGIS.1 <- DF.6 %>% filter(TagID == fish[i]) # subset data for unique transmitter
+#   fishGIS.1 <- Rec.6 %>% filter(TagID == fish[i]) # subset data for unique transmitter
 # 
 #   fishGIS.2 <- data.frame(x = fishGIS.1$DetLong, y = fishGIS.1$DetLat)   # Now designate coordinates
 # 
