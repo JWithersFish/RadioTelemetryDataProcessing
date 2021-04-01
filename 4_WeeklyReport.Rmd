@@ -231,22 +231,27 @@ knitr::include_graphics(files)
 FilesGMT5 <- list.files(path = "../RawReceiverDownloads/GMTPlus5",
                         pattern = "*.txt") # This creates a list of all files in directory
 
-FilesGMT5a <- data.frame(Files = FilesGMT5) %>% 
+FilesGMT5a <- as.character(data.frame(Files = FilesGMT5) %>% 
   mutate(FileDate = substr(FilesGMT5, start = 6, stop = 15)) %>% 
-  filter(FileDate > (Sys.Date() - 32)) %>% 
+  filter(FileDate > (Sys.Date() - 32)) %>%
   dplyr::select(Files) %>% 
-  pull()
+  pull())
 
 if(length(FilesGMT5a > 0)){
-df.GMT5Files <- NULL # Create empty shell df to drop files into
-for (i in 1:length(FilesGMT5a)){
-  x1 <- fread(paste("../RawReceiverDownloads/GMTPlus5/", FilesGMT5a[i], sep = ""))
-  
-  x2 <- x1 %>%
-    mutate(File = FilesGMT5a[i], # Add file name
-           Site = substr(FilesGMT5a[i], start = 1, stop = 3)) # Update site to filename site
-  
-  df.GMT5Files <- bind_rows(df.GMT5Files, x2)
+  df.GMT5Files <- NULL # Create empty shell df to drop files into
+  for (i in 1:length(FilesGMT5a)){
+    x1 <- fread(paste("../RawReceiverDownloads/GMTPlus5/", FilesGMT5a[i], sep = ""))
+    
+    x2 <- x1 %>%
+      mutate(File = FilesGMT5a[i], # Add file name
+             Site = substr(FilesGMT5a[i], start = 1, stop = 3), # Update site to filename site
+             timeStamp = as.POSIXct(paste(Date, Time), # Create datetime
+                                    format = "%Y-%m-%d %H:%M:%S",
+                                    origin="1970-01-01",
+                                    tz="Etc/GMT+5"), # Format to GMT+5
+             timeStamp = with_tz(timeStamp, tzone = "Etc/GMT+4")) # Convert timestamp to GMT+4 (EST)
+    
+    df.GMT5Files <- bind_rows(df.GMT5Files, x2)
   }
 }
 
@@ -255,23 +260,29 @@ FilesGMT4 <- list.files(path = "../RawReceiverDownloads",
                         pattern="*.txt") # This creates a list of all files in directory
 
 FilesGMT4a <- as.character(data.frame(Files = FilesGMT4) %>%
-  mutate(FileDate = substr(FilesGMT4, start = 6, stop = 15)) %>%
-  filter(FileDate > (Sys.Date() - 32)) %>%
-  dplyr::pull(Files)) 
+                             mutate(FileDate = substr(FilesGMT4, start = 6, stop = 15)) %>%
+                             filter(FileDate > (Sys.Date() - 32)) %>%
+                             dplyr::pull(Files)) 
 
 if(length(FilesGMT4a > 0)){
-df.GMT4Files <- NULL
-for (j in 1:length(FilesGMT4a)){
-  y1 <- fread(paste("../RawReceiverDownloads/", FilesGMT4a[j], sep = ""))
-                
-
-  y2 <- y1 %>%
-    mutate(File = FilesGMT4a[j], # Add file name
-           Site = substr(FilesGMT4a[j], start = 1, stop = 3)) # Update site to filename site
-
-  df.GMT4Files <- bind_rows(df.GMT4Files, y2)
+  df.GMT4Files <- NULL
+  for (j in 1:length(FilesGMT4a)){
+    y1 <- fread(paste("../RawReceiverDownloads/", FilesGMT4a[j], sep = ""))
+    
+    
+    y2 <- y1 %>%
+      mutate(File = FilesGMT4a[j], # Add file name
+             Site = substr(FilesGMT4a[j], start = 1, stop = 3),  # Update site to filename site
+             timeStamp = as.POSIXct(paste(Date, Time), # Create datetime
+                                    format = "%Y-%m-%d %H:%M:%S",
+                                    origin="1970-01-01",
+                                    tz="Etc/GMT+4")) # Format to GMT+4 (EST)
+    
+    df.GMT4Files <- bind_rows(df.GMT4Files, y2)
   }
 }
+
+
 
 # Combine dataframes
 if(exists("df.GMT4Files", inherits = FALSE) & exists("df.GMT5Files", inherits = FALSE)){
@@ -282,55 +293,24 @@ if(exists("df.GMT4Files", inherits = FALSE) & exists("df.GMT5Files", inherits = 
       df.all <- df.GMT5Files
       }
 
-  
-# > Dedup and filter detections prior to study ####
+# > Dedup and filter detections prior to study
 df.filtered <- df.all %>%
   distinct(Date, Time, Site, Ant, Freq, Type, Code, Power, .keep_all = TRUE) %>% 
   filter(Date > as.Date("2019-09-01")| !is.na(Date)) 
 
 
-# > Convert time to EST for GMT+5 files ####
-df.GMT5 <- df.filtered %>%
-  filter(File %in% FilesGMT5) %>% # Select rows whose file names come from GMT+5 folder
-  mutate(timeStamp = as.POSIXct(paste(Date, Time), # Create datetime
-                                format = "%Y-%m-%d %H:%M:%S",
-                                origin="1970-01-01",
-                                tz="Etc/GMT+5"), # Format to GMT+5
-         timeStamp = with_tz(timeStamp, tzone = "Etc/GMT+4")) # Convert timestamp to GMT+4 (EST)
-
-# Convert time to EST for GMT+4 files
-# df.GMT4 <- df.filtered %>%
-#   filter(File %in% FilesGMT4) %>% # Select rows from files from GMT+4
-#   mutate(timeStamp = as.POSIXct(paste(Date, Time), # Create datetime
-#                                 format = "%Y-%m-%d %H:%M:%S",
-#                                 origin="1970-01-01",
-#                                 tz="Etc/GMT+4")) # Format to GMT+4 (EST)
 
 # Combine time standardized (EST) dataframes
-df.timeCorr <- df.GMT5 %>% 
+df.timeCorr <- df.filtered %>% 
   mutate(Date = as.Date(format(timeStamp, "%Y-%m-%d")), # Overwrite date with updated dates
-         Time = format(timeStamp, "%H:%M:%S")) %>% # Overwrite times with updated times
-  select(-timeStamp) %>%# remove timestamp column
-  mutate(Site = as.integer(Site))
-
-
-
-
-
+         Time = format(timeStamp, "%H:%M:%S"), # Overwrite times with updated times
+         DetDateTime = timeStamp, # remove timestamp column
+         Site = as.integer(Site)) %>% 
+  dplyr::select(-timeStamp)
 
 df.Rec.1 <- df.timeCorr %>%
-  filter(Freq == "164.480") %>% # Filter frequency we want to increase processing speed
-  mutate(FreqCode = paste(Freq, Code, sep = " "), # Create freqcode
-         Beacon = if_else(FreqCode == 
-                            "164.480 25" |
-                             Site %in% c(108, 109) & 
-                            FreqCode == "164.480 24"| Site %in% c(110, 111) &
-                            FreqCode == "164.480 27", 1, 0)) %>% # Designate beacons
-  filter(Beacon == 1) %>% # Filter beacons
-  mutate(DetDateTime = as.POSIXct(paste(Date, Time, sep = " "), # Create datetime
-                                  format = "%Y-%m-%d %H:%M:%S", 
-                                  origin = "1970-01-01", 
-                                  tz = "Etc/GMT+5")) %>%  
+  mutate(FreqCode = paste0(Freq, 0, " ", Code)) %>% 
+  filter(FreqCode == "164.480 25") %>% # Filter frequency we want to increase processing speed
   group_by(FreqCode, Site) %>%
   arrange(Site, DetDateTime) %>%
   mutate(min_lag = difftime(DetDateTime,lag(DetDateTime))) %>% # Creat timelag b/t det.
@@ -340,7 +320,7 @@ df.Rec.1 <- df.timeCorr %>%
 
 df.Rec.1.Sum <- df.Rec.1 %>%
   group_by(Site, Date) %>%
-  summarise(detections = n()) %>%
+  summarise(detections = n(), Power = mean(Power, na.rm = TRUE)) %>%
   mutate(Date = as.Date(Date))
 
 
@@ -353,8 +333,9 @@ df.Rec.1.Sum <- df.Rec.1 %>%
 
 # Need to add any dates that may be missing for a given receiver. So create dataframe with all dates and stations
 ## Ultimately need to update this to remove dates past download date
-Miss.Dat <- expand.grid(Site = seq(from = 101, to = 114, by = 1), 
-                        Date = seq(from = as_date("2019-09-19"), 
+Miss.Dat <- expand.grid(Site = c(seq(from = 101, to = 114, by = 1), 
+                                 seq(from = 200, to = 208, by = 1)), 
+                        Date = seq(from = as_date(Sys.Date() - 32),
                                    to = as_date(Sys.Date()), by = 1)) %>%
   mutate(detections = 0, Site = as.integer(Site), Date = as.Date(Date))
 
@@ -364,7 +345,7 @@ df.Rec.2 <- df.Rec.1.Sum %>%
   arrange(-detections) %>%
   distinct(Date, Site, .keep_all = TRUE) %>% # Remove stations that have both 0 detections and data present on a given day
   filter(Date > as.Date("2019-09-18")) %>% # Remove data prior to start of study (Ideally this would be the receiver deployment dates)
-  mutate(flag = ifelse(detections > 273 &  detections < 302, "Good", "Flag")) %>% 
+  mutate(flag = ifelse(detections > 273 &  detections < 302, "Good", "Flag")) %>%
   filter(Date > (Sys.Date() - 32))  # Only look at this past week's data
 
 # Plot
@@ -407,7 +388,7 @@ Sites <- df.Rec.2 %>%
 
 
 # Dygraphs for RMD
-mydyplots <- lapply(1:14, function(i) dygraph(xts(x = df.Rec.2 %>%
+mydyplots <- lapply(1:23, function(i) dygraph(xts(x = df.Rec.2 %>%
                                                     filter(Site == Sites[i]) %>%
                                                     ungroup() %>%
                                                     select(Date, detections),

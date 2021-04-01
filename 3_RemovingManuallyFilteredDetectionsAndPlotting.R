@@ -241,6 +241,15 @@ fwrite(DF.Clean.1, "../Tables/PostClean/DF.Clean.csv",
        col.names = TRUE, 
        row.names = FALSE)
 
+
+
+# To create space in RAM before plotting, remove objects not needed anymore and garbage clean
+rm(DF.Clean.0, DF.Pre_Clean.0, DF.Pre_Clean.1)
+gc()
+
+
+
+
 system.time({
 for(i in 1:length(fish)){
     tempData <- DF.Clean.1 %>% 
