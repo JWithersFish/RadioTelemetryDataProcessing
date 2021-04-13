@@ -60,9 +60,13 @@ FishCoords <- read.csv("../../Shiny_App_Data/FishCoords.csv",
 # > Beacon data ####
 beacon <- read.csv("../../Shiny_App_Data/Beacon.csv", 
                    header = TRUE,
-                   stringsAsFactors = FALSE) %>% 
-    mutate(Power = abs(Power)) #%>% 
-    # rename(Detections = detections)
+                   stringsAsFactors = FALSE) #%>% 
+    # mutate(Power = abs(Power)) 
+
+# > Dams data ####
+dams <- read.csv("../../Shiny_App_Data/Dams.csv", 
+                 header = TRUE,
+                 stringsAsFactors = FALSE)
 
 # > Site coords ####
 Noise <- read.csv("../../Shiny_App_Data/Noise.csv", 
@@ -113,6 +117,8 @@ ui <- dashboardPage(skin = "black",
                      badgeLabel = "New", badgeColor = "green"),
             menuItem("Fish", tabName = "fish", icon = icon("fish"),
                      badgeLabel = "New", badgeColor = "green"),
+            # menuItem("Smolts", tabName = "smolt", icon = icon("seedling"),
+            #          badgeLabel = "New", badgeColor = "green"),
             menuItem("QA / QC", tabName = "qaqc", icon = icon("balance-scale-right"),
                      badgeLabel = "New", badgeColor = "green")
         )
@@ -153,7 +159,7 @@ ui <- dashboardPage(skin = "black",
                         )
                     ),
             
-            # Fish
+            # Adult Salmon
             tabItem("fish",
                     fluidRow(
                         # column(width = 3,
@@ -219,55 +225,71 @@ ui <- dashboardPage(skin = "black",
                         )
                     )),
             
+            # # Smolts
+            # tabItem("smolt",
+            #         fluidRow(
+            #             box(title = "Input", 
+            #                 solidHeader = TRUE, 
+            #                 status = "primary", 
+            #                 width = 3, 
+            #                 height = 150,
+            #                 selectInput("TagID", "TagID:",
+            #                             c("164.380 185", "164.380 186", "164.380 179", "164.380 160", "164.380 175",
+            #                               "164.380 167", "164.380 183", "164.380 155", "164.380 165", "164.380 172",
+            #                               "164.380 156", "164.380 184", "164.380 178", "164.380 164", "164.380 189",
+            #                               "164.380 170", "164.380 161", "164.380 154", "164.380 177", "164.380 163",
+            #                               "164.380 151", "164.380 180", "164.380 162", "164.380 171", "164.380 157",
+            #                               "164.380 182", "164.380 174", "164.380 153", "164.380 168", "164.380 188",
+            #                               "164.380 152", "164.380 166", "164.380 176", "164.380 181", "164.480 147",
+            #                               "164.380 173", "164.480 131", "164.480 122", "164.480 149", "164.480 138",
+            #                               "164.480 129", "164.380 169", "164.380 158", "164.480 114", "164.480 121",
+            #                               "164.480 111", "164.380 159", "164.480 120", "164.480 150", "164.480 152",
+            #                               "164.480 123", "164.480 112", "164.480 116", "164.480 151", "164.480 103",
+            #                               "164.480 105", "164.480 117", "164.480 110", "164.480 128", "164.480 134",
+            #                               "164.480 145", "164.480 136", "164.480 109", "164.480 115", "164.480 118",
+            #                               "164.480 140", "164.480 113", "164.480 133", "164.480 143", "164.480 101",
+            #                               "164.480 148", "164.480 139", "164.480 124", "164.480 146", "164.480 153",
+            #                               "164.480 141", "164.480 132", "164.480 102", "164.480 126", "164.480 119",
+            #                               "164.480 125", "164.480 135", "164.480 137", "164.480 144", "164.480 104",
+            #                               "164.480 108", "164.480 106", "164.480 142", "164.480 155", "164.480 127",
+            #                               "164.480 107", "164.480 130")
+            #                 )
+            #             ),
+            #             box(title = "Bio Data",
+            #                 solidHeader = TRUE,
+            #                 width = 9,
+            #                 height = 300,
+            #                 background = "black",
+            #                 infoBoxOutput("ReleaseGroup"),
+            #                 infoBoxOutput("Sex"),
+            #                 infoBoxOutput("DateLastDet"),
+            #                 valueBoxOutput("ValTL"),
+            #                 valueBoxOutput("ValWeight"),
+            #                 valueBoxOutput("RecoveredDat")
+            #             )
+            #         ),
+            #         
+            #         fluidRow(
+            #             box(title = "Map of Detections", 
+            #                 footer = "Blue points denote detections of fish while orange denote stationary receivers",
+            #                 solidHeader = TRUE, 
+            #                 width = 5, 
+            #                 height = 500,
+            #                 leafletOutput("mymapSmolt")
+            #             )
+            #             ,
+            #             box(title = "Detection history plot", 
+            #                 solidHeader = TRUE,
+            #                 width = 7,
+            #                 height = 650,
+            #                 imageOutput("myImageSmolt")
+            #             )
+            #         )),
+            
+            
             # QA / QC
             tabItem("qaqc",
                     fluidRow(
-                        # box(dygraphOutput("beacon_plot1")),
-                        # box(plotOutput("noise_plot1")),
-                        # box(dygraphOutput("beacon_plot2")),
-                        # box(plotOutput("noise_plot2")),
-                        # box(dygraphOutput("beacon_plot3")),
-                        # box(plotOutput("noise_plot3")),
-                        # box(dygraphOutput("beacon_plot4")),
-                        # box(plotOutput("noise_plot4")),
-                        # box(dygraphOutput("beacon_plot5")),
-                        # box(plotOutput("noise_plot5")),
-                        # box(dygraphOutput("beacon_plot6")),
-                        # box(plotOutput("noise_plot6")),
-                        # box(dygraphOutput("beacon_plot7")),
-                        # box(plotOutput("noise_plot7")),
-                        # box(dygraphOutput("beacon_plot8")),
-                        # box(plotOutput("noise_plot8")),
-                        # box(dygraphOutput("beacon_plot9")),
-                        # box(plotOutput("noise_plot9")),
-                        # box(dygraphOutput("beacon_plot10")),
-                        # box(plotOutput("noise_plot10")),
-                        # box(dygraphOutput("beacon_plot11")),
-                        # box(plotOutput("noise_plot11")),
-                        # box(dygraphOutput("beacon_plot12")),
-                        # box(plotOutput("noise_plot12")),
-                        # box(dygraphOutput("beacon_plot13")),
-                        # box(plotOutput("noise_plot13")),
-                        # box(dygraphOutput("beacon_plot14")),
-                        # box(plotOutput("noise_plot14")),
-                        # box(dygraphOutput("beacon_plot15")),
-                        # box(plotOutput("noise_plot15")),
-                        # box(dygraphOutput("beacon_plot16")),
-                        # box(plotOutput("noise_plot16")),
-                        # box(dygraphOutput("beacon_plot17")),
-                        # box(plotOutput("noise_plot17")),
-                        # box(dygraphOutput("beacon_plot18")),
-                        # box(plotOutput("noise_plot18")),
-                        # box(dygraphOutput("beacon_plot19")),
-                        # box(plotOutput("noise_plot19")),
-                        # box(dygraphOutput("beacon_plot20")),
-                        # box(plotOutput("noise_plot20")),
-                        # box(dygraphOutput("beacon_plot21")),
-                        # box(plotOutput("noise_plot21")),
-                        # box(dygraphOutput("beacon_plot22")),
-                        # box(plotOutput("noise_plot22")),
-                        # box(dygraphOutput("beacon_plot23")),
-                        # box(plotOutput("noise_plot23"))
                         column(4, dygraphOutput("beacon_plot1")),
                         column(4, dygraphOutput("beaconPOWER_plot1")),
                         column(4, plotOutput("noise_plot1")),
@@ -461,7 +483,6 @@ server <- function(input, output) {
                     filter(TagID == input$TagID) %>%
                     dplyr::select(FishGroup) %>%
                     pull(),
-            # subtitle = "Weight (kg)",
             icon = icon("fish"),
             color = "green",
             width = 1,
@@ -498,6 +519,19 @@ server <- function(input, output) {
         }, deleteFile = FALSE)
 
     
+    # # Smolt images 
+    # output$myImageSmolt <- renderImage({
+    #     filename <- normalizePath(file.path("../../Figures/PostClean/",
+    #                                         paste("Fish", input$TagID, "_", BioData %>% 
+    #                                                   filter(TagID == input$TagID) %>% 
+    #                                                   dplyr::select(Sex) %>% slice(.,1) ,"_2020.png", sep = "")))
+    #     
+    #     # Return a list containing the filename
+    #     list(src = filename,
+    #          height = 600, 
+    #          width = 800)
+    # }, deleteFile = FALSE)
+    
     
     
     # > Render Leaflet Site Map ####
@@ -533,6 +567,24 @@ server <- function(input, output) {
     })    
     
     
+    # # Smolt map
+    # output$mymapSmolt <- renderLeaflet({
+    #     leaflet(TagSitePts %>%
+    #                 dplyr::filter(TagID %in% c(input$TagID, "Winooski WWTP", "Winooski One", "BWWTP", "Gorge 18 Downstream",
+    #                                            "Gorge 18 upstream", "Essex WWTP", "Essex 19", "Richmond Downstream",
+    #                                            "Richmond Upstream", "Huntington Upstream", "Huntington Downstream",
+    #                                            "Red House", "Grey House", "Bolton Falls"))) %>%
+    #         addProviderTiles("Esri.WorldTopoMap", group = "Satellite") %>%
+    #         addCircleMarkers(lng = ~ Longitude,
+    #                          lat = ~ Latitude,
+    #                          label = ~ DetDateTime,
+    #                          radius = 2,
+    #                          popup = ~ DetDateTime,
+    #                          color = ~ ColorRamp,
+    #                          opacity = ~ ColorGrad) %>%
+    #         addScaleBar(position = "bottomleft")
+    # })    
+    
     
     # > Render Beacon Dygraphs ####
     output$beacon_plot1 <- renderDygraph({xts(x = beacon %>%
@@ -543,7 +595,7 @@ server <- function(input, output) {
                                                           filter(Site == Sites[1]) %>%
                                                           ungroup() %>%
                                                           pull(Date))) %>% 
-            dygraph(main = paste("Beacon at Station:",
+            dygraph(main = paste("Beacon Detections at Station:",
                                  Sites[1], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
@@ -551,13 +603,7 @@ server <- function(input, output) {
             dyAxis("x", label = "Date") %>%
             dyLimit(as.numeric(288), color = "black") %>%
             dyShading(from = as.numeric(273), to = as.numeric(302),
-                      axis = "y", color = "#CCEBD6") #%>% 
-            # dyRibbon(data = beacon %>%
-            #              filter(Site == Sites[1]) %>%
-            #              ungroup() %>%
-            #              mutate(Power = ifelse(Power < -95, 1, 0)) %>% 
-            #              pull(Power), top = 0.2, bottom = 0.0,
-            #          palette = c("#009E73",  "#D55E00")) 
+                      axis = "y", color = "#CCEBD6")
     })
     
     output$beacon_plot2 <- renderDygraph({xts(x = beacon %>%
@@ -568,7 +614,7 @@ server <- function(input, output) {
                                                           filter(Site == Sites[2]) %>%
                                                           ungroup() %>%
                                                           pull(Date))) %>% 
-            dygraph(main = paste("Beacon at Station:",
+            dygraph(main = paste("Beacon Detections at Station:",
                                  Sites[2], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
@@ -576,13 +622,7 @@ server <- function(input, output) {
             dyAxis("x", label = "Date") %>%
             dyLimit(as.numeric(288), color = "black") %>%
             dyShading(from = as.numeric(273), to = as.numeric(302),
-                      axis = "y", color = "#CCEBD6") #%>% 
-            # dyRibbon(data = beacon %>%
-            #              filter(Site == Sites[2]) %>%
-            #              ungroup() %>%
-            #              mutate(Power = ifelse(Power < -75, 1, 0)) %>% 
-            #              pull(Power), top = 0.2, bottom = 0.0,
-            #          palette = c("#009E73",  "#D55E00"))
+                      axis = "y", color = "#CCEBD6")
     })
     
     output$beacon_plot3 <- renderDygraph({xts(x = beacon %>%
@@ -593,7 +633,7 @@ server <- function(input, output) {
                                                           filter(Site == Sites[3]) %>%
                                                           ungroup() %>%
                                                           pull(Date))) %>% 
-            dygraph(main = paste("Beacon at Station:",
+            dygraph(main = paste("Beacon Detections at Station:",
                                  Sites[3], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
@@ -601,13 +641,7 @@ server <- function(input, output) {
             dyAxis("x", label = "Date") %>%
             dyLimit(as.numeric(288), color = "black") %>%
             dyShading(from = as.numeric(273), to = as.numeric(302),
-                      axis = "y", color = "#CCEBD6") #%>% 
-            # dyRibbon(data = beacon %>%
-            #              filter(Site == Sites[3]) %>%
-            #              ungroup() %>%
-            #              mutate(Power = ifelse(Power < -83, 1, 0)) %>% 
-            #              pull(Power), top = 0.2, bottom = 0.0,
-            #          palette = c("#009E73",  "#D55E00"))
+                      axis = "y", color = "#CCEBD6")
     })
     
     output$beacon_plot4 <- renderDygraph({xts(x = beacon %>%
@@ -618,7 +652,7 @@ server <- function(input, output) {
                                                           filter(Site == Sites[4]) %>%
                                                           ungroup() %>%
                                                           pull(Date))) %>% 
-            dygraph(main = paste("Beacon at Station:",
+            dygraph(main = paste("Beacon Detections at Station:",
                                  Sites[4], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
@@ -626,13 +660,7 @@ server <- function(input, output) {
             dyAxis("x", label = "Date") %>%
             dyLimit(as.numeric(288), color = "black") %>%
             dyShading(from = as.numeric(273), to = as.numeric(302),
-                      axis = "y", color = "#CCEBD6") #%>% 
-            # dyRibbon(data = beacon %>%
-            #              filter(Site == Sites[4]) %>%
-            #              ungroup() %>%
-            #              mutate(Power = ifelse(Power < -77, 1, 0)) %>% 
-            #              pull(Power), top = 0.2, bottom = 0.0,
-            #          palette = c("#009E73",  "#D55E00"))
+                      axis = "y", color = "#CCEBD6")
     })
     
     output$beacon_plot5 <- renderDygraph({xts(x = beacon %>%
@@ -643,7 +671,7 @@ server <- function(input, output) {
                                                           filter(Site == Sites[5]) %>%
                                                           ungroup() %>%
                                                           pull(Date))) %>% 
-            dygraph(main = paste("Beacon at Station:",
+            dygraph(main = paste("Beacon Detections at Station:",
                                  Sites[5], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
@@ -651,13 +679,7 @@ server <- function(input, output) {
             dyAxis("x", label = "Date") %>%
             dyLimit(as.numeric(288), color = "black") %>%
             dyShading(from = as.numeric(273), to = as.numeric(302),
-                      axis = "y", color = "#CCEBD6") #%>% 
-            # dyRibbon(data = beacon %>%
-            #              filter(Site == Sites[5]) %>%
-            #              ungroup() %>%
-            #              mutate(Power = ifelse(Power < -98, 1, 0)) %>% 
-            #              pull(Power), top = 0.2, bottom = 0.0,
-            #          palette = c("#009E73",  "#D55E00"))
+                      axis = "y", color = "#CCEBD6")
     })
     
     output$beacon_plot6 <- renderDygraph({xts(x = beacon %>%
@@ -668,7 +690,7 @@ server <- function(input, output) {
                                                           filter(Site == Sites[6]) %>%
                                                           ungroup() %>%
                                                           pull(Date))) %>% 
-            dygraph(main = paste("Beacon at Station:",
+            dygraph(main = paste("Beacon Detections at Station:",
                                  Sites[6], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
@@ -676,13 +698,7 @@ server <- function(input, output) {
             dyAxis("x", label = "Date") %>%
             dyLimit(as.numeric(288), color = "black") %>%
             dyShading(from = as.numeric(273), to = as.numeric(302),
-                      axis = "y", color = "#CCEBD6") #%>% 
-            # dyRibbon(data = beacon %>%
-            #              filter(Site == Sites[6]) %>%
-            #              ungroup() %>%
-            #              mutate(Power = ifelse(Power < -100, 1, 0)) %>% 
-            #              pull(Power), top = 0.2, bottom = 0.0,
-            #          palette = c("#009E73",  "#D55E00"))
+                      axis = "y", color = "#CCEBD6")
     })
     
     output$beacon_plot7 <- renderDygraph({xts(x = beacon %>%
@@ -693,7 +709,7 @@ server <- function(input, output) {
                                                           filter(Site == Sites[7]) %>%
                                                           ungroup() %>%
                                                           pull(Date))) %>% 
-            dygraph(main = paste("Beacon at Station:",
+            dygraph(main = paste("Beacon Detections at Station:",
                                  Sites[7], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
@@ -701,13 +717,7 @@ server <- function(input, output) {
             dyAxis("x", label = "Date") %>%
             dyLimit(as.numeric(288), color = "black") %>%
             dyShading(from = as.numeric(273), to = as.numeric(302),
-                      axis = "y", color = "#CCEBD6") #%>% 
-            # dyRibbon(data = beacon %>%
-            #              filter(Site == Sites[7]) %>%
-            #              ungroup() %>%
-            #              mutate(Power = ifelse(Power < -63, 1, 0)) %>% 
-            #              pull(Power), top = 0.2, bottom = 0.0,
-            #          palette = c("#009E73",  "#D55E00"))
+                      axis = "y", color = "#CCEBD6")
     })
     
     output$beacon_plot8 <- renderDygraph({xts(x = beacon %>%
@@ -718,7 +728,7 @@ server <- function(input, output) {
                                                           filter(Site == Sites[8]) %>%
                                                           ungroup() %>%
                                                           pull(Date))) %>% 
-            dygraph(main = paste("Beacon at Station:",
+            dygraph(main = paste("Beacon Detections at Station:",
                                  Sites[8], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
@@ -726,13 +736,7 @@ server <- function(input, output) {
             dyAxis("x", label = "Date") %>%
             dyLimit(as.numeric(288), color = "black") %>%
             dyShading(from = as.numeric(273), to = as.numeric(302),
-                      axis = "y", color = "#CCEBD6")# %>% 
-            # dyRibbon(data = beacon %>%
-            #              filter(Site == Sites[8]) %>%
-            #              ungroup() %>%
-            #              mutate(Power = ifelse(Power < -60, 1, 0)) %>% 
-            #              pull(Power), top = 0.2, bottom = 0.0,
-            #          palette = c("#009E73",  "#D55E00"))
+                      axis = "y", color = "#CCEBD6")
     })
     
     output$beacon_plot9 <- renderDygraph({xts(x = beacon %>%
@@ -743,7 +747,7 @@ server <- function(input, output) {
                                                           filter(Site == Sites[9]) %>%
                                                           ungroup() %>%
                                                           pull(Date))) %>% 
-            dygraph(main = paste("Beacon at Station:",
+            dygraph(main = paste("Beacon Detections at Station:",
                                  Sites[9], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
@@ -751,13 +755,7 @@ server <- function(input, output) {
             dyAxis("x", label = "Date") %>%
             dyLimit(as.numeric(288), color = "black") %>%
             dyShading(from = as.numeric(273), to = as.numeric(302),
-                      axis = "y", color = "#CCEBD6") #%>% 
-            # dyRibbon(data = beacon %>%
-            #              filter(Site == Sites[9]) %>%
-            #              ungroup() %>%
-            #              mutate(Power = ifelse(Power < -68, 1, 0)) %>% 
-            #              pull(Power), top = 0.2, bottom = 0.0,
-            #          palette = c("#009E73",  "#D55E00"))
+                      axis = "y", color = "#CCEBD6")
     })
     
     output$beacon_plot10 <- renderDygraph({xts(x = beacon %>%
@@ -768,7 +766,7 @@ server <- function(input, output) {
                                                           filter(Site == Sites[10]) %>%
                                                           ungroup() %>%
                                                           pull(Date))) %>% 
-            dygraph(main = paste("Beacon at Station:",
+            dygraph(main = paste("Beacon Detections at Station:",
                                  Sites[10], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
@@ -776,13 +774,7 @@ server <- function(input, output) {
             dyAxis("x", label = "Date") %>%
             dyLimit(as.numeric(288), color = "black") %>%
             dyShading(from = as.numeric(273), to = as.numeric(302),
-                      axis = "y", color = "#CCEBD6") #%>% 
-            # dyRibbon(data = beacon %>%
-            #              filter(Site == Sites[10]) %>%
-            #              ungroup() %>%
-            #              mutate(Power = ifelse(Power < -90, 1, 0)) %>% 
-            #              pull(Power), top = 0.2, bottom = 0.0,
-            #          palette = c("#009E73",  "#D55E00"))
+                      axis = "y", color = "#CCEBD6")
     })
     
     output$beacon_plot11 <- renderDygraph({xts(x = beacon %>%
@@ -793,7 +785,7 @@ server <- function(input, output) {
                                                           filter(Site == Sites[11]) %>%
                                                           ungroup() %>%
                                                           pull(Date))) %>% 
-            dygraph(main = paste("Beacon at Station:",
+            dygraph(main = paste("Beacon Detections at Station:",
                                  Sites[11], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
@@ -801,13 +793,7 @@ server <- function(input, output) {
             dyAxis("x", label = "Date") %>%
             dyLimit(as.numeric(288), color = "black") %>%
             dyShading(from = as.numeric(273), to = as.numeric(302),
-                      axis = "y", color = "#CCEBD6") #%>% 
-            # dyRibbon(data = beacon %>%
-            #              filter(Site == Sites[11]) %>%
-            #              ungroup() %>%
-            #              mutate(Power = ifelse(Power < -87, 1, 0)) %>% 
-            #              pull(Power), top = 0.2, bottom = 0.0,
-            #          palette = c("#009E73",  "#D55E00"))
+                      axis = "y", color = "#CCEBD6")
     })
     
     output$beacon_plot12 <- renderDygraph({xts(x = beacon %>%
@@ -818,7 +804,7 @@ server <- function(input, output) {
                                                           filter(Site == Sites[12]) %>%
                                                           ungroup() %>%
                                                           pull(Date))) %>% 
-            dygraph(main = paste("Beacon at Station:",
+            dygraph(main = paste("Beacon Detections at Station:",
                                  Sites[12], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
@@ -826,13 +812,7 @@ server <- function(input, output) {
             dyAxis("x", label = "Date") %>%
             dyLimit(as.numeric(288), color = "black") %>%
             dyShading(from = as.numeric(273), to = as.numeric(302),
-                      axis = "y", color = "#CCEBD6") #%>% 
-            # dyRibbon(data = beacon %>%
-            #              filter(Site == Sites[12]) %>%
-            #              ungroup() %>%
-            #              mutate(Power = ifelse(Power < -77, 1, 0)) %>% 
-            #              pull(Power), top = 0.2, bottom = 0.0,
-            #          palette = c("#009E73",  "#D55E00"))
+                      axis = "y", color = "#CCEBD6")
     })
     
     output$beacon_plot13 <- renderDygraph({xts(x = beacon %>%
@@ -843,7 +823,7 @@ server <- function(input, output) {
                                                           filter(Site == Sites[13]) %>%
                                                           ungroup() %>%
                                                           pull(Date))) %>% 
-            dygraph(main = paste("Beacon at Station:",
+            dygraph(main = paste("Beacon Detections at Station:",
                                  Sites[13], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
@@ -851,13 +831,7 @@ server <- function(input, output) {
             dyAxis("x", label = "Date") %>%
             dyLimit(as.numeric(288), color = "black") %>%
             dyShading(from = as.numeric(273), to = as.numeric(302),
-                      axis = "y", color = "#CCEBD6") #%>% 
-            # dyRibbon(data = beacon %>%
-            #              filter(Site == Sites[13]) %>%
-            #              ungroup() %>%
-            #              mutate(Power = ifelse(Power < -80, 1, 0)) %>% 
-            #              pull(Power), top = 0.2, bottom = 0.0,
-            #          palette = c("#009E73",  "#D55E00"))
+                      axis = "y", color = "#CCEBD6")
     })
 
     output$beacon_plot14 <- renderDygraph({xts(x = beacon %>%
@@ -868,7 +842,7 @@ server <- function(input, output) {
                                                            filter(Site == Sites[14]) %>%
                                                            ungroup() %>%
                                                            pull(Date))) %>% 
-            dygraph(main = paste("Beacon at Station:",
+            dygraph(main = paste("Beacon Detections at Station:",
                                  Sites[14], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
@@ -876,13 +850,7 @@ server <- function(input, output) {
             dyAxis("x", label = "Date") %>%
             dyLimit(as.numeric(288), color = "black") %>%
             dyShading(from = as.numeric(273), to = as.numeric(302),
-                      axis = "y", color = "#CCEBD6") #%>% 
-            # dyRibbon(data = beacon %>%
-            #              filter(Site == Sites[14]) %>%
-            #              ungroup() %>%
-            #              mutate(Power = ifelse(Power < -90, 1, 0)) %>% 
-            #              pull(Power), top = 0.2, bottom = 0.0,
-            #          palette = c("#009E73",  "#D55E00"))
+                      axis = "y", color = "#CCEBD6")
     })
 
     output$beacon_plot15 <- renderDygraph({xts(x = beacon %>%
@@ -893,7 +861,7 @@ server <- function(input, output) {
                                                            filter(Site == Sites[15]) %>%
                                                            ungroup() %>%
                                                            pull(Date))) %>% 
-            dygraph(main = paste("Beacon at Station:",
+            dygraph(main = paste("Beacon Detections at Station:",
                                  Sites[15], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
@@ -901,13 +869,7 @@ server <- function(input, output) {
             dyAxis("x", label = "Date") %>%
             dyLimit(as.numeric(288), color = "black") %>%
             dyShading(from = as.numeric(273), to = as.numeric(302),
-                      axis = "y", color = "#CCEBD6") #%>% 
-            # dyRibbon(data = beacon %>%
-            #              filter(Site == Sites[15]) %>%
-            #              ungroup() %>%
-            #              mutate(Power = ifelse(Power < -90, 1, 0)) %>% 
-            #              pull(Power), top = 0.2, bottom = 0.0,
-            #          palette = c("#009E73",  "#D55E00"))
+                      axis = "y", color = "#CCEBD6")
     })
 
     output$beacon_plot16 <- renderDygraph({xts(x = beacon %>%
@@ -918,7 +880,7 @@ server <- function(input, output) {
                                                            filter(Site == Sites[16]) %>%
                                                            ungroup() %>%
                                                            pull(Date))) %>% 
-            dygraph(main = paste("Beacon at Station:",
+            dygraph(main = paste("Beacon Detections at Station:",
                                  Sites[16], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
@@ -926,13 +888,7 @@ server <- function(input, output) {
             dyAxis("x", label = "Date") %>%
             dyLimit(as.numeric(288), color = "black") %>%
             dyShading(from = as.numeric(273), to = as.numeric(302),
-                      axis = "y", color = "#CCEBD6") #%>% 
-            # dyRibbon(data = beacon %>%
-            #              filter(Site == Sites[16]) %>%
-            #              ungroup() %>%
-            #              mutate(Power = ifelse(Power < -90, 1, 0)) %>% 
-            #              pull(Power), top = 0.2, bottom = 0.0,
-            #          palette = c("#009E73",  "#D55E00"))
+                      axis = "y", color = "#CCEBD6")
     })
     
     output$beacon_plot17 <- renderDygraph({xts(x = beacon %>%
@@ -943,7 +899,7 @@ server <- function(input, output) {
                                                            filter(Site == Sites[17]) %>%
                                                            ungroup() %>%
                                                            pull(Date))) %>% 
-            dygraph(main = paste("Beacon at Station:",
+            dygraph(main = paste("Beacon Detections at Station:",
                                  Sites[17], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
@@ -951,13 +907,7 @@ server <- function(input, output) {
             dyAxis("x", label = "Date") %>%
             dyLimit(as.numeric(288), color = "black") %>%
             dyShading(from = as.numeric(273), to = as.numeric(302),
-                      axis = "y", color = "#CCEBD6") #%>% 
-            # dyRibbon(data = beacon %>%
-            #              filter(Site == Sites[17]) %>%
-            #              ungroup() %>%
-            #              mutate(Power = ifelse(Power < -90, 1, 0)) %>% 
-            #              pull(Power), top = 0.2, bottom = 0.0,
-            #          palette = c("#009E73",  "#D55E00"))
+                      axis = "y", color = "#CCEBD6")
     })
     
     
@@ -969,7 +919,7 @@ server <- function(input, output) {
                                                            filter(Site == Sites[18]) %>%
                                                            ungroup() %>%
                                                            pull(Date))) %>% 
-            dygraph(main = paste("Beacon at Station:",
+            dygraph(main = paste("Beacon Detections at Station:",
                                  Sites[18], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
@@ -977,13 +927,7 @@ server <- function(input, output) {
             dyAxis("x", label = "Date") %>%
             dyLimit(as.numeric(288), color = "black") %>%
             dyShading(from = as.numeric(273), to = as.numeric(302),
-                      axis = "y", color = "#CCEBD6") #%>% 
-            # dyRibbon(data = beacon %>%
-            #              filter(Site == Sites[18]) %>%
-            #              ungroup() %>%
-            #              mutate(Power = ifelse(Power < -90, 1, 0)) %>% 
-            #              pull(Power), top = 0.2, bottom = 0.0,
-            #          palette = c("#009E73",  "#D55E00"))
+                      axis = "y", color = "#CCEBD6")
     })
     
     output$beacon_plot19 <- renderDygraph({xts(x = beacon %>%
@@ -994,7 +938,7 @@ server <- function(input, output) {
                                                            filter(Site == Sites[19]) %>%
                                                            ungroup() %>%
                                                            pull(Date))) %>% 
-            dygraph(main = paste("Beacon at Station:",
+            dygraph(main = paste("Beacon Detections at Station:",
                                  Sites[19], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
@@ -1002,13 +946,7 @@ server <- function(input, output) {
             dyAxis("x", label = "Date") %>%
             dyLimit(as.numeric(288), color = "black") %>%
             dyShading(from = as.numeric(273), to = as.numeric(302),
-                      axis = "y", color = "#CCEBD6") #%>% 
-            # dyRibbon(data = beacon %>%
-            #              filter(Site == Sites[19]) %>%
-            #              ungroup() %>%
-            #              mutate(Power = ifelse(Power < -90, 1, 0)) %>% 
-            #              pull(Power), top = 0.2, bottom = 0.0,
-            #          palette = c("#009E73",  "#D55E00"))
+                      axis = "y", color = "#CCEBD6")
     })
     
     output$beacon_plot20 <- renderDygraph({xts(x = beacon %>%
@@ -1019,7 +957,7 @@ server <- function(input, output) {
                                                            filter(Site == Sites[20]) %>%
                                                            ungroup() %>%
                                                            pull(Date))) %>% 
-            dygraph(main = paste("Beacon at Station:",
+            dygraph(main = paste("Beacon Detections at Station:",
                                  Sites[20], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
@@ -1027,13 +965,7 @@ server <- function(input, output) {
             dyAxis("x", label = "Date") %>%
             dyLimit(as.numeric(288), color = "black") %>%
             dyShading(from = as.numeric(273), to = as.numeric(302),
-                      axis = "y", color = "#CCEBD6") #%>% 
-            # dyRibbon(data = beacon %>%
-            #              filter(Site == Sites[20]) %>%
-            #              ungroup() %>%
-            #              mutate(Power = ifelse(Power < -90, 1, 0)) %>% 
-            #              pull(Power), top = 0.2, bottom = 0.0,
-            #          palette = c("#009E73",  "#D55E00"))
+                      axis = "y", color = "#CCEBD6")
     })
     
     output$beacon_plot21 <- renderDygraph({xts(x = beacon %>%
@@ -1044,7 +976,7 @@ server <- function(input, output) {
                                                            filter(Site == Sites[21]) %>%
                                                            ungroup() %>%
                                                            pull(Date))) %>% 
-            dygraph(main = paste("Beacon at Station:",
+            dygraph(main = paste("Beacon Detections at Station:",
                                  Sites[21], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
@@ -1052,13 +984,7 @@ server <- function(input, output) {
             dyAxis("x", label = "Date") %>%
             dyLimit(as.numeric(288), color = "black") %>%
             dyShading(from = as.numeric(273), to = as.numeric(302),
-                      axis = "y", color = "#CCEBD6") #%>% 
-            # dyRibbon(data = beacon %>%
-            #              filter(Site == Sites[21]) %>%
-            #              ungroup() %>%
-            #              mutate(Power = ifelse(Power < -90, 1, 0)) %>% 
-            #              pull(Power), top = 0.2, bottom = 0.0,
-            #          palette = c("#009E73",  "#D55E00"))
+                      axis = "y", color = "#CCEBD6")
     })
     
     output$beacon_plot22 <- renderDygraph({xts(x = beacon %>%
@@ -1069,7 +995,7 @@ server <- function(input, output) {
                                                            filter(Site == Sites[22]) %>%
                                                            ungroup() %>%
                                                            pull(Date))) %>% 
-            dygraph(main = paste("Beacon at Station:",
+            dygraph(main = paste("Beacon Detections at Station:",
                                  Sites[22], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
@@ -1077,13 +1003,7 @@ server <- function(input, output) {
             dyAxis("x", label = "Date") %>%
             dyLimit(as.numeric(288), color = "black") %>%
             dyShading(from = as.numeric(273), to = as.numeric(302),
-                      axis = "y", color = "#CCEBD6") #%>% 
-            # dyRibbon(data = beacon %>%
-            #              filter(Site == Sites[22]) %>%
-            #              ungroup() %>%
-            #              mutate(Power = ifelse(Power < -90, 1, 0)) %>% 
-            #              pull(Power), top = 0.2, bottom = 0.0,
-            #          palette = c("#009E73",  "#D55E00"))
+                      axis = "y", color = "#CCEBD6")
     })
     
     output$beacon_plot23 <- renderDygraph({xts(x = beacon %>%
@@ -1094,7 +1014,7 @@ server <- function(input, output) {
                                                            filter(Site == Sites[23]) %>%
                                                            ungroup() %>%
                                                            pull(Date))) %>% 
-            dygraph(main = paste("Beacon at Station:",
+            dygraph(main = paste("Beacon Detections at Station:",
                                  Sites[23], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
@@ -1102,13 +1022,7 @@ server <- function(input, output) {
             dyAxis("x", label = "Date") %>%
             dyLimit(as.numeric(288), color = "black") %>%
             dyShading(from = as.numeric(273), to = as.numeric(302),
-                      axis = "y", color = "#CCEBD6") #%>% 
-            # dyRibbon(data = beacon %>%
-            #              filter(Site == Sites[23]) %>%
-            #              ungroup() %>%
-            #              mutate(Power = ifelse(Power < -90, 1, 0)) %>% 
-            #              pull(Power), top = 0.2, bottom = 0.0,
-            #          palette = c("#009E73",  "#D55E00"))
+                      axis = "y", color = "#CCEBD6")
     })
     
     # Power Plots
@@ -1124,7 +1038,7 @@ server <- function(input, output) {
                                  Sites[1], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
-            dyAxis("y", label = "Daily Mean Power") %>%
+            dyAxis("y", label = "Daily Mean Power", valueRange = c(-110, -55)) %>%
             dyAxis("x", label = "Date")
     })
 
@@ -1140,7 +1054,7 @@ server <- function(input, output) {
                                  Sites[2], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
-            dyAxis("y", label = "Daily Mean Power") %>%
+            dyAxis("y", label = "Daily Mean Power", valueRange = c(-110, -55)) %>%
             dyAxis("x", label = "Date")
     })
 
@@ -1156,7 +1070,7 @@ server <- function(input, output) {
                                  Sites[3], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
-            dyAxis("y", label = "Daily Mean Power") %>%
+            dyAxis("y", label = "Daily Mean Power", valueRange = c(-110, -55)) %>%
             dyAxis("x", label = "Date")
     })
 
@@ -1172,7 +1086,7 @@ server <- function(input, output) {
                                  Sites[4], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
-            dyAxis("y", label = "Daily Mean Power") %>%
+            dyAxis("y", label = "Daily Mean Power", valueRange = c(-110, -55)) %>%
             dyAxis("x", label = "Date")
     })
 
@@ -1188,7 +1102,7 @@ server <- function(input, output) {
                                  Sites[5], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
-            dyAxis("y", label = "Daily Mean Power") %>%
+            dyAxis("y", label = "Daily Mean Power", valueRange = c(-110, -55)) %>%
             dyAxis("x", label = "Date")
     })
 
@@ -1204,7 +1118,7 @@ server <- function(input, output) {
                                  Sites[6], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
-            dyAxis("y", label = "Daily Mean Power") %>%
+            dyAxis("y", label = "Daily Mean Power", valueRange = c(-110, -55)) %>%
             dyAxis("x", label = "Date")
     })
 
@@ -1220,7 +1134,7 @@ server <- function(input, output) {
                                  Sites[7], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
-            dyAxis("y", label = "Daily Mean Power") %>%
+            dyAxis("y", label = "Daily Mean Power", valueRange = c(-110, -55)) %>%
             dyAxis("x", label = "Date")
     })
 
@@ -1236,7 +1150,7 @@ server <- function(input, output) {
                                  Sites[8], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
-            dyAxis("y", label = "Daily Mean Power") %>%
+            dyAxis("y", label = "Daily Mean Power", valueRange = c(-110, -55)) %>%
             dyAxis("x", label = "Date")
     })
 
@@ -1252,7 +1166,7 @@ server <- function(input, output) {
                                  Sites[9], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
-            dyAxis("y", label = "Daily Mean Power") %>%
+            dyAxis("y", label = "Daily Mean Power", valueRange = c(-110, -55)) %>%
             dyAxis("x", label = "Date")
     })
 
@@ -1268,7 +1182,7 @@ server <- function(input, output) {
                                  Sites[10], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
-            dyAxis("y", label = "Daily Mean Power") %>%
+            dyAxis("y", label = "Daily Mean Power", valueRange = c(-110, -55)) %>%
             dyAxis("x", label = "Date")
     })
 
@@ -1284,7 +1198,7 @@ server <- function(input, output) {
                                  Sites[11], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
-            dyAxis("y", label = "Daily Mean Power") %>%
+            dyAxis("y", label = "Daily Mean Power", valueRange = c(-110, -55)) %>%
             dyAxis("x", label = "Date")
     })
 
@@ -1300,7 +1214,7 @@ server <- function(input, output) {
                                  Sites[12], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
-            dyAxis("y", label = "Daily Mean Power") %>%
+            dyAxis("y", label = "Daily Mean Power", valueRange = c(-110, -55)) %>%
             dyAxis("x", label = "Date")
     })
 
@@ -1316,7 +1230,7 @@ server <- function(input, output) {
                                  Sites[13], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
-            dyAxis("y", label = "Daily Mean Power") %>%
+            dyAxis("y", label = "Daily Mean Power", valueRange = c(-110, -55)) %>%
             dyAxis("x", label = "Date")
     })
 
@@ -1332,7 +1246,7 @@ server <- function(input, output) {
                                  Sites[14], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
-            dyAxis("y", label = "Daily Mean Power") %>%
+            dyAxis("y", label = "Daily Mean Power", valueRange = c(-110, -55)) %>%
             dyAxis("x", label = "Date")
     })
 
@@ -1348,7 +1262,7 @@ server <- function(input, output) {
                                  Sites[15], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
-            dyAxis("y", label = "Daily Mean Power") %>%
+            dyAxis("y", label = "Daily Mean Power", valueRange = c(-110, -55)) %>%
             dyAxis("x", label = "Date")
     })
 
@@ -1364,7 +1278,7 @@ server <- function(input, output) {
                                  Sites[16], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
-            dyAxis("y", label = "Daily Mean Power") %>%
+            dyAxis("y", label = "Daily Mean Power", valueRange = c(-110, -55)) %>%
             dyAxis("x", label = "Date")
     })
 
@@ -1380,7 +1294,7 @@ server <- function(input, output) {
                                  Sites[17], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
-            dyAxis("y", label = "Daily Mean Power") %>%
+            dyAxis("y", label = "Daily Mean Power", valueRange = c(-110, -55)) %>%
             dyAxis("x", label = "Date")
     })
 
@@ -1396,7 +1310,7 @@ server <- function(input, output) {
                                  Sites[18], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
-            dyAxis("y", label = "Daily Mean Power") %>%
+            dyAxis("y", label = "Daily Mean Power", valueRange = c(-110, -55)) %>%
             dyAxis("x", label = "Date")
     })
 
@@ -1412,7 +1326,7 @@ server <- function(input, output) {
                                  Sites[19], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
-            dyAxis("y", label = "Daily Mean Power") %>%
+            dyAxis("y", label = "Daily Mean Power", valueRange = c(-110, -55)) %>%
             dyAxis("x", label = "Date")
     })
 
@@ -1428,7 +1342,7 @@ server <- function(input, output) {
                                  Sites[20], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
-            dyAxis("y", label = "Daily Mean Power") %>%
+            dyAxis("y", label = "Daily Mean Power", valueRange = c(-110, -55)) %>%
             dyAxis("x", label = "Date")
     })
 
@@ -1444,7 +1358,7 @@ server <- function(input, output) {
                                  Sites[21], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
-            dyAxis("y", label = "Daily Mean Power") %>%
+            dyAxis("y", label = "Daily Mean Power", valueRange = c(-110, -55)) %>%
             dyAxis("x", label = "Date")
     })
 
@@ -1460,7 +1374,7 @@ server <- function(input, output) {
                                  Sites[22], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
-            dyAxis("y", label = "Daily Mean Power") %>%
+            dyAxis("y", label = "Daily Mean Power", valueRange = c(-110, -55)) %>%
             dyAxis("x", label = "Date")
     })
 
@@ -1476,7 +1390,7 @@ server <- function(input, output) {
                                  Sites[23], sep = " ")) %>%
             dyRangeSelector() %>%
             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
-            dyAxis("y", label = "Daily Mean Power") %>%
+            dyAxis("y", label = "Daily Mean Power", valueRange = c(-110, -55)) %>%
             dyAxis("x", label = "Date")
     })
     

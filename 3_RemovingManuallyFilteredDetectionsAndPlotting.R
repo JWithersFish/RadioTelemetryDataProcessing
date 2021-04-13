@@ -343,10 +343,10 @@ for(i in 1:length(fish)){
            height = 5)
     
     
-    fwrite(x = tempData,   # write each subsetted fish dataframe out to csv
-           file = paste("../Tables/PostClean/Fish", 
-                        fish[i],"_", tempData$Sex[1], # use sep ="\t" for tab delimited and "," for comma delim
-                        ".csv", sep = ""), sep = ",", col.names = TRUE,
-           row.names = FALSE)
+    # fwrite(x = tempData,   # write each subsetted fish dataframe out to csv
+    #        file = paste("../Tables/PostClean/Fish", 
+    #                     fish[i],"_", tempData$Sex[1], # use sep ="\t" for tab delimited and "," for comma delim
+    #                     ".csv", sep = ""), sep = ",", col.names = TRUE,
+    #        row.names = FALSE)
   }
 })

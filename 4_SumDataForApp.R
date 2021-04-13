@@ -18,7 +18,8 @@ gc() # Clear ram
 
 # > Install and load packages ####
 # Create vector of packages
-requiredPackages <- c("dplyr", "lubridate", "RODBC", "data.table")
+requiredPackages <- c("dplyr", "lubridate", "RODBC", "data.table",
+                      "bit64", "RSQLite", "foreach", "doParallel")
 
 # Function to install any packages not installed
 ipak <- function(pkg){
@@ -80,9 +81,10 @@ Sites.1 <- Sites.0 %>%
                         Latitude_DD = ReleaseLat, Longitude_DD = ReleaseLong) %>% 
           slice(., 1)) %>% 
   mutate(SiteType = ifelse(SiteID %in% as.character(seq(101, 114, by = 1)), "#E69F00", 
-                           ifelse(SiteID == "Release", "#000000", "#56B4E9")))
+                           ifelse(SiteID == "Release", "#000000", "#009292")))
 
 write.csv(x = Sites.1, file = "../Shiny_App_Data/SiteCoords.csv")
+
 
 
 
@@ -164,6 +166,8 @@ write.csv(x = Tags.1, file = "../Shiny_App_Data/BioData.csv")
 
 
 
+
+
 # > leaflet ---- 
 # Summarise data to specific locations based on day 
 ReducedDet <- DF.Clean %>%
@@ -187,8 +191,91 @@ for(i in 1:length(TagList)){
 }
          
 
-
 write.csv(x = ReducedDet.1, file = "../Shiny_App_Data/FishCoords.csv")
+
+
+
+
+
+# Dam Data ----
+# > Connect to SQL databases ####
+
+# List all SQL databases post BIOTAS
+
+SQLDBs <- list.files(path = "../1_CleaningWithAbtas/Python/Data/DamSites/",
+                     pattern = "*.db", full.names = FALSE)
+
+# Import desired tables from SQL databases and append
+my.list <- vector("list", length(SQLDBs)) # Create shell to append dataframes to
+
+# Use multiple computer cores to increase processing speed (Parrallelize)
+## Note that although Parrallelizing generally speeds up loops, it only makes a modest improvement in this situation. 
+### This is because our pinch point is the speed of reading in SQL databases not processing the data. Not much we can do about it without a supercomputer or more machines 
+NoCores <- detectCores() - 1
+cl <- makeCluster(NoCores)
+doParallel::registerDoParallel(cl)
+
+
+system.time({
+  Rec.0 <- foreach(
+    i = 1:length(SQLDBs), 
+    .combine = rbind,
+    .packages = c("data.table", "RSQLite"),
+    .verbose = TRUE
+  ) %dopar% {
+    # Connect to BIOTAS SQL Database
+    con <- DBI::dbConnect(RSQLite::SQLite(), paste("../1_CleaningWithAbtas/Python/Data/DamSites/", # Connect to SQL database
+                                                   SQLDBs[i], sep = ""))
+    
+    # Extract name of table with highest iteration
+    tblMax <- data.table::as.data.table(DBI::dbListTables(con)) # pull in list of all tables in SQL database
+    tblMax <- tblMax[grep("tblClassify_", V1), ] # Extract only classified tables
+    tblMax[, Iter := substr(V1, start = nchar(V1) - 1, stop = nchar(V1))]
+    tblMax <- tblMax[, IterForm := gsub("\\_", "0", Iter)][order(-IterForm)] # Substitute 0's whereever there are _'s and order from big to small
+    tblMax <- tblMax[1, V1]  # take the table name with the highest iteration)
+    
+    # Pull table into R
+    SQL.0 <- as.data.table(dbGetQuery(conn = con,
+                                      statement = paste("SELECT * FROM", tblMax, sep = " "))) 
+    
+    # Disconnect from SQL Database
+    dbDisconnect(con)  
+    
+    # Since fileName is produced from Classify_2 and not Classify_3 must add this column to combine
+    if(is.null(SQL.0$fileName)){
+      SQL.0[, fileName := NA]}
+    
+    # Extract columns of interest to save on RAM
+    SQL.1 <- SQL.0[, .(FreqCode, timeStamp, Power, recID, test)]
+    
+    # Compile
+    SQL.1
+  }
+})
+
+
+# stop using multiple clusters in parallel
+parallel::stopCluster(cl)
+rm(cl)
+
+
+
+Dams.0 <- Rec.0 %>%
+  filter(test == 1) %>% # Filter out only detections that are deemed true posistives from BIOTAS
+  mutate(DetDateTime = as.POSIXct(timeStamp, format = "%Y-%m-%d %H:%M:%S", # Format time to EST
+                                origin = "1970-01-01", 
+                                tz = "Etc/GMT+4"),
+         Site = as.character(recID),
+         TagID = FreqCode) %>% 
+  dplyr::select(TagID, DetDateTime, Power) %>% 
+  rbind(DF.Clean %>%
+          filter(Site %in% c(102, 103, 104, 105)),
+        dplyr::select(TagID, DetDateTime, Power))
+
+write.csv(x = Dams.0, file = "../Shiny_App_Data/Dams.csv")
+
+
+
 
 
 

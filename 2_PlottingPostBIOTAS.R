@@ -136,12 +136,12 @@ Rec.1 <- Rec.0 %>%
 
 Rec.1_GMT5 <- Rec.1 %>% 
   filter(fileName %in% list.files("../RawReceiverDownloads/GMTPlus5",
-                                  pattern = "*.txt")) %>% 
+                                  pattern = "*.txt")) %>%
   mutate(timeStamp = force_tz(timeStamp,
                                 tz = "Etc/GMT+5"), # Specify posixct is in GMT+5
          timeStamp = with_tz(timeStamp, tzone = "Etc/GMT+4")) %>% # Format to EST
   rbind(Rec.1 %>% 
-          filter(fileName %in% list.files("../RawReceiverDownloads/GMTPlus5",
+          filter(!fileName %in% list.files("../RawReceiverDownloads/GMTPlus5",
                                           pattern = "*.txt")))
 
 
@@ -227,7 +227,7 @@ ReceiverDist <- CalcRivKm(ReceiverDist.0,
 # > Add Rec. RiverKm to df #### 
 Rec.2 <- ReceiverDist %>% # NOTE THAT Decimal places for the lat and long are being removed!
   dplyr::select(Site, River.Km, SiteName, Latitude, Longitude, snapdist) %>%
-  inner_join(Rec.1, # Select columns of interest
+  inner_join(Rec.1_GMT5, # Select columns of interest
              by = c("Site" = "recID"))
 
 

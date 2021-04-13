@@ -4,9 +4,9 @@ author: "US Fish and Wildlife Service (contact: Jonah_Withers@fws.gov for issues
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output: 
   html_document:
-  toc: true
-  toc_float: true
-  toc_collapsed: true
+    toc: true
+    toc_float: true
+    toc_collapsed: true
 ---
 
 ```{r setup, include=FALSE}
@@ -25,8 +25,8 @@ gc() # Clear ram
 requiredPackages <- c("dplyr", "lubridate", "sf", "sp", 
                       "rgdal", "scales", "ggplot2", "suncalc", 
                       "riverdist", "RODBC", "measurements",
-                      "tibble", "knitr", "leaflet", "maps",
-                      "data.table", "bit64", "htmltools", "xts",
+                      "tibble", "knitr", "leaflet", "maps", "doParallel",
+                      "data.table", "bit64", "RSQLite", "htmltools", "xts",
                       "dygraphs", "foreach", "readr", "kableExtra", "randomcoloR")
 
 # Function to install any packages not installed
@@ -40,6 +40,19 @@ ipak <- function(pkg){
 # Load packages
 ipak(requiredPackages)
 
+# > Connect to access database ####
+
+# Identify channel to connect to database
+channel <- odbcDriverConnect("Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=../../Databases/WinooskiSalmonTelemetryDatabase.accdb")
+
+# Look at tables and queries within database
+sqlTables(channel)
+
+Tags.0 <- as.data.table(sqlFetch(channel, "qry_FishList")) # Import list of fish info
+
+
+# Close connection to database
+odbcClose(channel)
 
 
 
@@ -96,30 +109,30 @@ LastDetSum.1 <- LastDetSum %>%
 
 
 # Add Trib data ----
-RiverUTM <- line2network(path = "../ArcGIS", #Without Tributaries
-                         layer = "WinooskiRiverKmLine_UTM18", tolerance = 90)
-
-TribDist <- pointshp2segvert(path = "../ArcGIS",
-                             layer = "Trib_Coords", rivers = RiverUTM)
-
-for (i in 1:nrow(TribDist)){
-  RiverUTM$mouth$mouth.seg <- 13 # Without tributaries
-  RiverUTM$mouth$mouth.vert <- 1
-  TribDist$River.Km[i] <- mouthdist(TribDist$seg[i], 
-                                    TribDist$vert[i], RiverUTM)
-}
-TribDist <- TribDist %>% 
-  mutate(River.Km.1 = River.Km/1000)
-
-TribDist.1 <- TribDist %>% 
-  filter( STREAM_ORD > 2) %>%
-  mutate(Trib_Color = case_when(STREAM_ORD == 3 ~ "#6BAED6", # Color code stream by stream_order
-                                STREAM_ORD == 4 ~ "#2171B5",
-                                STREAM_ORD == 5 ~ "#08306B",
-                                TRUE ~ "white"))
+# RiverUTM <- line2network(path = "../ArcGIS", #Without Tributaries
+#                          layer = "WinooskiRiverKmLine_UTM18", tolerance = 90)
+# 
+# TribDist <- pointshp2segvert(path = "../ArcGIS",
+#                              layer = "Trib_Coords", rivers = RiverUTM)
+# 
+# for (i in 1:nrow(TribDist)){
+#   RiverUTM$mouth$mouth.seg <- 13 # Without tributaries
+#   RiverUTM$mouth$mouth.vert <- 1
+#   TribDist$River.Km[i] <- mouthdist(TribDist$seg[i], 
+#                                     TribDist$vert[i], RiverUTM)
+# }
+# TribDist <- TribDist %>% 
+#   mutate(River.Km.1 = River.Km/1000)
+# 
+# TribDist.1 <- TribDist %>% 
+#   filter( STREAM_ORD > 2) %>%
+#   mutate(Trib_Color = case_when(STREAM_ORD == 3 ~ "#6BAED6", # Color code stream by stream_order
+#                                 STREAM_ORD == 4 ~ "#2171B5",
+#                                 STREAM_ORD == 5 ~ "#08306B",
+#                                 TRUE ~ "white"))
 ```
 
-### This Week's Current Fish Locations
+### Week's Current Fish Locations
 ```{r RiverSection Table, echo = FALSE, include = TRUE}
 kable(LastDetSum.1) %>% 
   kable_classic()
@@ -154,7 +167,8 @@ kable(LastDetSum.1) %>%
 #                fixed_thead = TRUE, 
 #                bootstrap_options = c("striped", "hover", "condensed", #"responsive"))
 ```
-### Fish Movement on a weekly basis 2020 Salmon
+
+### Fish Weekly Movement Table
 
 Difference between the maximum and minimum river kilometer within a given week are calculated for each transmitter. If the difference is > 400 m the cell receivers a green background, if the dfference is < 400 m the cell receivers a red background, and if there are no data available within the given week the cell receivers a yellow background. 
 ```{r 2020 Movement Table, echo = FALSE, include = TRUE, message = FALSE, warning = FALSE}
@@ -189,31 +203,33 @@ DF.Clean %>%
 
 ```{r Map Build, echo=FALSE, include=TRUE}
 # Map most recent detections ----
-set.seed(123)
-pal_seq_mapping <- data.frame(TagID = unique(as.character(LastDet$TagID)),
-                                             color = randomColor(count = length(unique(LastDet$TagID))))
-
-LastDetSum.0a <- LastDet %>% 
-  left_join(pal_seq_mapping, by = "TagID")
-
-map <- leaflet(LastDetSum.0a) %>% 
-  addProviderTiles("Esri.WorldImagery", group = "Satellite") %>%
-  addCircleMarkers(lng = ~ Longitude,
-                   lat = ~ Latitude,
-                   color = ~ LastDetSum.0a$color,
-                   popup = ~ TagID,
-                   label = ~ as.character(TagID),
-                   opacity = .75) %>%
-  addScaleBar(position = "bottomleft")
+# set.seed(123)
+# pal_seq_mapping <- data.frame(TagID = unique(as.character(LastDet$TagID)),
+#                                              color = randomColor(count = length(unique(LastDet$TagID))))
+# 
+# LastDetSum.0a <- LastDet %>% 
+#   left_join(pal_seq_mapping, by = "TagID")
+# 
+# map <- leaflet(LastDetSum.0a) %>% 
+#   addProviderTiles("Esri.WorldImagery", group = "Satellite") %>%
+#   addCircleMarkers(lng = ~ Longitude,
+#                    lat = ~ Latitude,
+#                    color = ~ LastDetSum.0a$color,
+#                    popup = ~ TagID,
+#                    label = ~ as.character(TagID),
+#                    opacity = .75) %>%
+#   addScaleBar(position = "bottomleft")
 ```
 
-### Mapped Locations of tagged fish over the last 2 weeks. Each fish has a unique color associated with its detected locations
+### Mapped Locations of 2 weeks
+
+Each fish has a unique color associated with its detected locations
 ```{r Map, echo = FALSE, include = TRUE}
 # for printing the maps
-tagList(map)
+# tagList(map)
 ```
 
-### River Kilometer for each detection to date
+### River Kilometer for each fish
 ```{r figurename, echo=FALSE, fig.align = 'center', out.width = '90%'}
 files <- list.files(path = "../Figures/PostClean/", 
                     pattern = "*2020.png",
@@ -221,6 +237,139 @@ files <- list.files(path = "../Figures/PostClean/",
 
 knitr::include_graphics(files)
 ```
+
+
+
+
+
+
+### Fish at Dams
+```{r Dams, echo=FALSE, warning = FALSE, message = FALSE, fig.align = 'center', out.width = '90%'}
+
+# Dam Data ----
+# > Connect to SQL databases ####
+
+# List all SQL databases post BIOTAS
+
+SQLDBs <- list.files(path = "../1_CleaningWithAbtas/Python/Data/DamSites/",
+                     pattern = "*.db", full.names = FALSE)
+
+# Import desired tables from SQL databases and append
+my.list <- vector("list", length(SQLDBs)) # Create shell to append dataframes to
+
+# Use multiple computer cores to increase processing speed (Parrallelize)
+## Note that although Parrallelizing generally speeds up loops, it only makes a modest improvement in this situation. 
+### This is because our pinch point is the speed of reading in SQL databases not processing the data. Not much we can do about it without a supercomputer or more machines 
+NoCores <- detectCores() - 1
+cl <- makeCluster(NoCores)
+doParallel::registerDoParallel(cl)
+
+
+system.time({
+  Rec.0 <- foreach(
+    i = 1:length(SQLDBs), 
+    .combine = rbind,
+    .packages = c("data.table", "RSQLite"),
+    .verbose = TRUE
+  ) %dopar% {
+    # Connect to BIOTAS SQL Database
+    con <- DBI::dbConnect(RSQLite::SQLite(), paste("../1_CleaningWithAbtas/Python/Data/DamSites/", # Connect to SQL database
+                                                   SQLDBs[i], sep = ""))
+    
+    # Extract name of table with highest iteration
+    tblMax <- data.table::as.data.table(DBI::dbListTables(con)) # pull in list of all tables in SQL database
+    tblMax <- tblMax[grep("tblClassify_", V1), ] # Extract only classified tables
+    tblMax[, Iter := substr(V1, start = nchar(V1) - 1, stop = nchar(V1))]
+    tblMax <- tblMax[, IterForm := gsub("\\_", "0", Iter)][order(-IterForm)] # Substitute 0's whereever there are _'s and order from big to small
+    tblMax <- tblMax[1, V1]  # take the table name with the highest iteration)
+    
+    # Pull table into R
+    SQL.0 <- as.data.table(dbGetQuery(conn = con,
+                                      statement = paste("SELECT * FROM", tblMax, sep = " "))) 
+    
+    # Disconnect from SQL Database
+    dbDisconnect(con)  
+    
+    # Since fileName is produced from Classify_2 and not Classify_3 must add this column to combine
+    if(is.null(SQL.0$fileName)){
+      SQL.0[, fileName := NA]}
+    
+    # Extract columns of interest to save on RAM
+    SQL.1 <- SQL.0[, .(FreqCode, timeStamp, Power, recID, test)]
+    
+    # Compile
+    SQL.1
+  }
+})
+
+# stop using multiple clusters in parallel
+parallel::stopCluster(cl)
+rm(cl)
+
+
+
+Dams.0 <- Rec.0 %>%
+  filter(test == 1) %>% # Filter out only detections that are deemed true posistives from BIOTAS
+  mutate(DetDateTime = as.POSIXct(timeStamp, format = "%Y-%m-%d %H:%M:%S", # Format time to EST
+                                origin = "1970-01-01", 
+                                tz = "Etc/GMT+4"),
+         Site = as.character(recID),
+         TagID = as.character(FreqCode)) %>% 
+  dplyr::select(TagID, DetDateTime, Site, Power) %>% 
+  rbind(DF.Clean %>%
+          filter(Site %in% c(102, 103, 104, 105)) %>% 
+          dplyr::select(TagID, DetDateTime, Site, Power))
+
+W1D <- Dams.0 %>% 
+  filter(Site %in% c(203, 204, 205, 206, 103))
+
+Gorge <- Dams.0 %>% 
+  filter(Site %in% c(104, 105, 207, 208))
+
+
+
+Tags <- Tags.0 %>% 
+  dplyr::select(TagID) %>% 
+  filter(substr(TagID, 1, 4) > 2018) %>% 
+  mutate(TagID = substr(TagID, 6, 17)) %>% 
+  unique()
+
+for(h in 1:length(Tags)){
+  W1temp <- W1D %>%
+    filter(TagID == Tags[h])
+  
+ print(W1temp %>%
+    ggplot(aes(x = DetDateTime, y = Power, color = factor(Site))) +
+    stat_smooth(method = "loess", se = FALSE, lty = 2) +
+      scale_x_datetime(breaks = pretty_breaks(20)) +
+    labs(x = "Date",
+         y = "Power",
+         color = "Site",
+         title = paste("TagID:", Tags[h], sep = "")) +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)))
+}
+
+
+
+for(k in 1:length(Tags)){
+  Gtemp <- Gorge %>%
+    filter(TagID == Tags[k])
+  
+ print(Gtemp %>%
+    ggplot(aes(x = DetDateTime, y = Power, color = factor(Site))) +
+    scale_x_datetime(breaks = pretty_breaks(20)) +
+    stat_smooth(method = "loess", se = FALSE, lty = 2) +
+      labs(x = "Date",
+         y = "Power",
+         color = "Site",
+         title = paste("TagID:", Tags[k], sep = "")) +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)))
+}
+```
+
+
 
 ### - Site Quality Assurance -
 ```{r Creating Beacon Figs, echo=FALSE, include=TRUE, warning = FALSE, message = FALSE}
@@ -348,6 +497,22 @@ df.Rec.2 <- df.Rec.1.Sum %>%
   mutate(flag = ifelse(detections > 273 &  detections < 302, "Good", "Flag")) %>%
   filter(Date > (Sys.Date() - 32))  # Only look at this past week's data
 
+
+
+# > Noise ####
+df.Noise <- df.timeCorr %>% 
+  mutate(FreqCode = paste0(Freq, 0, " ", Code)) %>% 
+  filter(FreqCode != "164.480 25", # Remove beacons
+         FreqCode != "164.380 25", # Remove tag drag
+         !FreqCode %in% substr(Tags.0$TagID, 6, 16)) %>% 
+  mutate(Bin = cut(Power, breaks = seq(-50, -140, -10))) %>% 
+  group_by(Bin, Date, Site) %>%
+  summarise(NoiseDet = n())
+
+
+
+
+
 # Plot
 Sites <- df.Rec.2 %>% 
   arrange(Site) %>% 
@@ -387,8 +552,9 @@ Sites <- df.Rec.2 %>%
 
 
 
-# Dygraphs for RMD
-mydyplots <- lapply(1:23, function(i) dygraph(xts(x = df.Rec.2 %>%
+# Dygraphs for RMD ----
+# > Beacon count ####
+mydyplots.count <- lapply(1:23, function(i) dygraph(xts(x = df.Rec.2 %>%
                                                     filter(Site == Sites[i]) %>%
                                                     ungroup() %>%
                                                     select(Date, detections),
@@ -405,12 +571,63 @@ mydyplots <- lapply(1:23, function(i) dygraph(xts(x = df.Rec.2 %>%
                       dyLimit(as.numeric(288), color = "black") %>%
                       dyShading(from = as.numeric(273), to = as.numeric(302),
                                 axis = "y", color = "#CCEBD6"))
+
+
+
+
+# > Beacon Power ####
+mydyplots.power <- lapply(1:23, function(j) dygraph(xts(x = df.Rec.2 %>% 
+                                                    filter(Site == Sites[j]) %>%
+                                                    ungroup() %>%
+                                                    select(Date, Power),
+                                                  order.by = df.Rec.2 %>%
+                                                    filter(Site == Sites[j]) %>%  
+                                                    ungroup() %>%
+                                                    pull(Date)),
+                                              main = paste("Beacon at Station:",
+                                                           Sites[j], sep = " ")) %>%
+                      dyRangeSelector() %>%
+                      dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
+                      dyAxis("y", label = "Daily Mean Power (dB)", valueRange = c(-110, -55)) %>%
+                      dyAxis("x", label = "Date"))
 ```
 
 ### Beacon time series
 The pupose of these plots is to allow users the ability to examine receiver performance on a daily basis by seeing if a tag (beacon) with a known ping rate (five minutes) is being detected at the expected intervals. Since beacons are set to fire every five minutes, the expected number of detections within a day is 288. 
 If detections within a given day are less than or greater than 288 the beacon may be out of range, the receiver may not be recording or logging correctly, or there may be an excessive amount of noise that is not being filtered out. 
-```{r Plotting Beacon Figs, echo = FALSE, include = TRUE}
+```{r Plotting Beacon Detections, echo = FALSE, include = TRUE}
 # for printing the maps
-htmltools::tagList(mydyplots)
+htmltools::tagList(mydyplots.count)
+```
+
+
+### Site noise
+The pupose of these plots is to allow users the ability to examine receiver performance on a daily basis by examining site noise. Noise is considered any detection that does not coincide with a tag ID. This does not include false positives from our tag IDs.
+```{r Plotting Noise, echo = FALSE, include = TRUE, warning = FALSE}
+for(f in 1:length(Sites)){
+  tempdat1 <- df.Noise %>%
+    filter(Site == Sites[f])
+  
+ print(tempdat1 %>%
+    ggplot() +
+    geom_bar(aes(x = Date, y = NoiseDet, fill = factor(Bin)),
+             color = "black",
+             stat = 'identity') +
+    scale_x_date(labels = date_format("%Y-%m-%d"),
+                 date_breaks = "2 day") +
+    labs(x = "Date",
+         y = "Daily Noise Detections",
+         fill = "Power",
+         title = paste("Site:", Sites[f], sep = "")) +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)))
+}
+```
+
+
+### Beacon Power
+The pupose of these plots is to allow users the ability to examine mean beacon power on a daily basis. If power of a beacon drastically changes then the site needs to be visited and examined for potentially issues (i.e. check BNC connections, check receiver settings, and check antenna and coax cable for damage).
+```{r Plotting Beacon Power, echo = FALSE, include = TRUE, warning = FALSE}
+# for printing the maps
+htmltools::tagList(mydyplots.power)
 ```

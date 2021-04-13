@@ -83,7 +83,8 @@ Sites <- unique(substr(txtfiles, start = 0, stop = 3))
 Sites.1 <- unique(substr(txtfiles.1, start = 0, stop = 3))
 
 # Concatenate 
-Sites.0 <- dplyr::coalesce(Sites, Sites.1)
+Sites.0 <- c(rbind(Sites, Sites.1)) %>% 
+  unique()
 
 # Create directories
 for(j in 1:length(Sites.0)){
