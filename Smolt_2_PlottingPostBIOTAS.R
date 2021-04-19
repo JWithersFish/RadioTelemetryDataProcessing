@@ -215,7 +215,7 @@ Rec.1_GMT5 <- Rec.1 %>%
 ReceiverDist.0 <- Sites.0 %>% 
   dplyr::select(Site = SiteID, SiteName, Latitude = Latitude_DD, Longitude = Longitude_DD) %>% 
   filter(substr(Site, 1, 4) > 2019,
-         substr(Site, 6, 8) %in% c(seq(101, 114, by = 1), seq(200, 202, by = 1 )))
+         substr(Site, 6, 8) %in% c(seq(101, 114, by = 1), seq(200, 202, by = 1)))
 
 # Calculate river.km using function
 ReceiverDist <- CalcRivKm(ReceiverDist.0,
@@ -224,7 +224,10 @@ ReceiverDist <- CalcRivKm(ReceiverDist.0,
                           Longitude = "Longitude",
                           Path2River = "../ArcGIS", 
                           RiverShape = "WinooskiRiver_MouthToBolton_UTM18",
-                          OutputCRS = CRS("+proj=utm +zone=18 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0"))
+                          OutputCRS = CRS("+proj=utm +zone=18 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")) %>% 
+  mutate(River.Km = ifelse(Site == "2021_200", 0, 
+                            ifelse(Site == "2021_201", 1.5, River.Km)),
+         Site = substr(Site, 6, 8))
 
 # > Add Rec. RiverKm to df #### 
 Rec.2 <- ReceiverDist %>% # NOTE THAT Decimal places for the lat and long are being removed!
@@ -390,37 +393,39 @@ Rec.4 <- Rec.3 %>%
 
 
 # Standardize Release datetime to EST ----
-Tags.GMT4 <- Tags.0 %>% 
-  mutate(ReleaseDateTime = as.POSIXct(as.character(ReleaseDateTime), 
-                                      format = "%Y-%m-%d %H:%M:%S", 
-                                      origin = "1970-01-01", 
-                                      tz = "Etc/GMT+4")) %>% 
-  filter(ReleaseDateTime < as.Date("2019-11-03") | 
-           (ReleaseDateTime >= as.Date("2020-03-08") &
-              ReleaseDateTime < as.Date("2020-11-01")))
+# Tags.GMT4 <- Tags.0 %>% 
+#   mutate(ReleaseDateTime = as.POSIXct(as.character(ReleaseDateTime), 
+#                                       format = "%Y-%m-%d %H:%M:%S", 
+#                                       origin = "1970-01-01", 
+#                                       tz = "Etc/GMT+4")) %>% 
+#   filter(ReleaseDateTime < as.Date("2019-11-03") | 
+#            (ReleaseDateTime >= as.Date("2020-03-08") &
+#               ReleaseDateTime < as.Date("2020-11-01")))
+# 
+# Tags.1 <- Tags.0 %>%
+#   mutate(ReleaseDateTime = with_tz(as.POSIXct(as.character(ReleaseDateTime), 
+#                                               format = "%Y-%m-%d %H:%M:%S", 
+#                                               origin = "1970-01-01", 
+#                                               tz = "Etc/GMT+5"), tz = "Etc/GMT+4")) %>% 
+#   filter((ReleaseDateTime >= as.Date("2019-11-03") &
+#             ReleaseDateTime < as.Date("2020-03-08")) | 
+#            ReleaseDateTime >= as.Date("2020-11-01")) %>%
+#   bind_rows(Tags.GMT4) %>%
+#   rename(Release = ReleaseDateTime) 
 
-Tags.1 <- Tags.0 %>%
-  mutate(ReleaseDateTime = with_tz(as.POSIXct(as.character(ReleaseDateTime), 
-                                              format = "%Y-%m-%d %H:%M:%S", 
-                                              origin = "1970-01-01", 
-                                              tz = "Etc/GMT+5"), tz = "Etc/GMT+4")) %>% 
-  filter((ReleaseDateTime >= as.Date("2019-11-03") &
-            ReleaseDateTime < as.Date("2020-03-08")) | 
-           ReleaseDateTime >= as.Date("2020-11-01")) %>%
-  bind_rows(Tags.GMT4) %>%
-  rename(Release = ReleaseDateTime) 
-
-
+Tags.1 <- Tags.0
 
 # > Match detections with fishIDs ####
 Rec.5 <- Tags.1 %>%
-  filter(substr(TagID, start = 0, stop = 4) > "2020") %>% # Select only smolts
+  filter(substr(TagID, start = 1, stop = 4) > 2020) %>% # Select only smolts
   mutate(TagID = substr(TagID, 6, length(TagID))) %>% # Remove year from tagID (Freqcode)
-  dplyr::select(TagID, Release, FloyTag, Sex, TL, Weight, ClipType) %>%
+  dplyr::select(TagID, 
+                # Release, 
+                FloyTag, Sex, TL, Weight, ClipType) %>%
   inner_join(Rec.4, by = "TagID") %>% # Match tag list with data
   dplyr::select(-date) %>%
   group_by(TagID) %>%
-  filter(DetDateTime >= Release) %>% # Filter detections that occured before release of fish
+  # filter(DetDateTime >= Release) %>% # Filter detections that occured before release of fish
   mutate(Riv.Sys = if_else(SiteName == "Huntington Upriver" | SiteName == "Huntington Downriver", 
                            "Huntington River", "Winooski River"),
          Plotcolor = paste(day_night, 
@@ -429,45 +434,45 @@ Rec.5 <- Tags.1 %>%
 
 
 
-# Identify recovery times and riverKm ----
-Tags.2 <- Tags.0 %>% 
-  filter(substr(TagID, start = 0, stop = 4) > "2020") %>% # Select only smolt tags
-  mutate(TagID = substr(TagID, 6, length(TagID))) %>% # Remove year from tagID (Freqcode)
-  dplyr::select(TagID, DateTimeRecovered, RecoveredLat, RecoveredLong)
-
-
-# Standardize time to GMT - 4 
-GMT4.Rec <- Tags.2 %>% 
-  mutate(DateTimeRecovered = as.POSIXct(as.character(DateTimeRecovered), 
-                                format = "%Y-%m-%d %H:%M:%S", 
-                                origin = "1970-01-01", 
-                                tz = "Etc/GMT+4")) %>% 
-  filter(DateTimeRecovered < as.Date("2019-11-03") | 
-           (DateTimeRecovered >= as.Date("2020-03-08") &
-              DateTimeRecovered < as.Date("2020-11-01")))
-
-
-
-# Add river km
-Tags.Rec <- Tags.2 %>%
-  mutate(DateTimeRecovered = with_tz(as.POSIXct(as.character(DateTimeRecovered), 
-                                              format = "%Y-%m-%d %H:%M:%S", 
-                                              origin = "1970-01-01", 
-                                              tz = "Etc/GMT+5"), tz = "Etc/GMT+4")) %>% 
-  filter((DateTimeRecovered >= as.Date("2019-11-03") &
-            DateTimeRecovered < as.Date("2020-03-08")) | 
-           DateTimeRecovered >= as.Date("2020-11-01")) %>%
-  bind_rows(GMT4.Rec) %>% 
-  CalcRivKm(., PointCRS = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"), 
-            Latitude = "RecoveredLat", 
-            Longitude = "RecoveredLong", 
-            Path2River = "../ArcGIS",
-            RiverShape = "WinooskiRiver_MouthToBolton_UTM18",
-            OutputCRS = CRS("+proj=utm +zone=18 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")) %>% 
-  mutate(DtTmRcv = as.POSIXct(DtTmRcv,
-                              format = "%Y-%m-%d %H:%M:%S", 
-                              origin = "1970-01-01", 
-                              tz = "Etc/GMT+4"))
+# # Identify recovery times and riverKm ----
+# Tags.2 <- Tags.0 %>% 
+#   filter(substr(TagID, start = 0, stop = 4) > "2020") %>% # Select only smolt tags
+#   mutate(TagID = substr(TagID, 6, length(TagID))) %>% # Remove year from tagID (Freqcode)
+#   dplyr::select(TagID, DateTimeRecovered, RecoveredLat, RecoveredLong)
+# 
+# 
+# # Standardize time to GMT - 4 
+# GMT4.Rec <- Tags.2 %>% 
+#   mutate(DateTimeRecovered = as.POSIXct(as.character(DateTimeRecovered), 
+#                                 format = "%Y-%m-%d %H:%M:%S", 
+#                                 origin = "1970-01-01", 
+#                                 tz = "Etc/GMT+4")) %>% 
+#   filter(DateTimeRecovered < as.Date("2019-11-03") | 
+#            (DateTimeRecovered >= as.Date("2020-03-08") &
+#               DateTimeRecovered < as.Date("2020-11-01")))
+# 
+# 
+# 
+# # Add river km
+# Tags.Rec <- Tags.2 %>%
+#   mutate(DateTimeRecovered = with_tz(as.POSIXct(as.character(DateTimeRecovered), 
+#                                               format = "%Y-%m-%d %H:%M:%S", 
+#                                               origin = "1970-01-01", 
+#                                               tz = "Etc/GMT+5"), tz = "Etc/GMT+4")) %>% 
+#   filter((DateTimeRecovered >= as.Date("2019-11-03") &
+#             DateTimeRecovered < as.Date("2020-03-08")) | 
+#            DateTimeRecovered >= as.Date("2020-11-01")) %>%
+#   bind_rows(GMT4.Rec) %>% 
+#   CalcRivKm(., PointCRS = CRS("+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"), 
+#             Latitude = "RecoveredLat", 
+#             Longitude = "RecoveredLong", 
+#             Path2River = "../ArcGIS",
+#             RiverShape = "WinooskiRiver_MouthToBolton_UTM18",
+#             OutputCRS = CRS("+proj=utm +zone=18 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")) %>% 
+#   mutate(DtTmRcv = as.POSIXct(DtTmRcv,
+#                               format = "%Y-%m-%d %H:%M:%S", 
+#                               origin = "1970-01-01", 
+#                               tz = "Etc/GMT+4"))
 
 
 
@@ -506,7 +511,9 @@ TribDist.1 <- CalcRivKm(Tribs,
 
 # > Plot & Write to disk ####
 Rec.6 <- Rec.5 %>% 
-  dplyr::select(TagID, Release,  FloyTag, Sex, TL, Weight, ClipType, DetDateTime, 
+  dplyr::select(TagID, 
+                # Release,  
+                FloyTag, Sex, TL, Weight, ClipType, DetDateTime, 
                 Latitude, Longitude, Power, Site, River.Km, SiteName, sunrise, sunset, 
                 day_night, ActiveVsFixed, Riv.Sys, Plotcolor, noiseRatio, lag, lagDiff, 
                 postTrue_A, postTrue_M, consDet_A, detHist_A, fileName, hitRatio_A, test, 
@@ -557,10 +564,10 @@ for(i in 1:length(fish)){
                                     "Night" = "#000000",
                                     "Night Huntington" = "#999999",
                                     "Day Huntington" = "#CC79A7")) +
-      scale_x_datetime(labels = date_format("%Y-%m-%d"),
-                       date_breaks = "15 day",
-                       limits = c(min(Rec.6$Release, na.rm = TRUE), 
-                                  max(Rec.6$DetDateTime, na.rm = TRUE))) +
+      # scale_x_datetime(labels = date_format("%Y-%m-%d"),
+      #                  date_breaks = "15 day",
+      #                  limits = c(min(Rec.6$Release, na.rm = TRUE), 
+      #                             max(Rec.6$DetDateTime, na.rm = TRUE))) +
       scale_y_continuous(
         name = "River Km", 
         sec.axis = sec_axis(~ ., 
@@ -569,9 +576,15 @@ for(i in 1:length(fish)){
           # 3.26989, 15.965215, 18.718525,
           # 28.84083, 49.30761, 56.54053, # Measured site river.km from arcGIS
           # 61.28562, 66.61284),
+                              0,
+                              1.5,
+                              11.28,
                               3.283793, 16.579020, 18.76995, 28.87375,
                               49.51102, 56.771230, 61.491209, 66.822979), # Pulled from snapped river.km distances
           labels = c(
+            "Bridge",
+            "Derway Park",
+            "Ethan Allen",
             'BWWTP', 'Winooski One',
             'Gorge 18',
             'Essex 19',
@@ -584,10 +597,10 @@ for(i in 1:length(fish)){
                                        size = 6), 
             axis.text.y.right = element_text(size = 6)) +
       geom_line(aes(x = DetDateTime, y = River.Km)) +
-      geom_point(aes(x = min(tempData$Release, na.rm = TRUE), y = 53.45484), 
-                 color = "#009E73", 
-                 shape = "star",
-                 size = 1.75) + # Add release site and time
+      # geom_point(aes(x = min(tempData$Release, na.rm = TRUE), y = 53.45484), 
+      #            color = "#009E73", 
+      #            shape = "star",
+      #            size = 1.75) + # Add release site and time
       labs(x = "", y = "River Km", 
            color = "Time of Day", 
            shape = "Detection type") +
@@ -595,12 +608,12 @@ for(i in 1:length(fish)){
                  color = TribDist.1$Trib_Color, 
                  size = .1, 
                  linetype = "solid") +
-      geom_point(data = Tags.Rec %>% 
-                   filter(TagID == fish[i]),
-                 aes(x = DtTmRcv, y = River.Km),
-                 color = "#E69F00",
-                 shape = "star",
-                 size = 1.75) +
+      # geom_point(data = Tags.Rec %>% 
+      #              filter(TagID == fish[i]),
+      #            aes(x = DtTmRcv, y = River.Km),
+      #            color = "#E69F00",
+      #            shape = "star",
+      #            size = 1.75) +
       geom_hline(yintercept = 28.84083, 
                color = "red", 
                size = .1, 
@@ -611,7 +624,10 @@ for(i in 1:length(fish)){
                    #   28.54120, 29.14046, 49.19853, 
                    #   49.41669, 55.81481, 55.94962, 56.54053, 
                    #   61.28562, 66.61284), 
-                   c(3.283793, 15.565960, 16.579020, 18.700732, 18.839175, 28.581155, 29.166349, # These are river distances of receivers derived from snapping to river line
+                   c(       0,
+                            1.5,
+                            11.28,
+                     3.283793, 15.565960, 16.579020, 18.700732, 18.839175, 28.581155, 29.166349, # These are river distances of receivers derived from snapping to river line
                      49.415475, 49.606572, 55.928899, 55.998692, 56.771230, 61.491209, 66.822979),
                  color = "gray25", 
                  size = .1, 
