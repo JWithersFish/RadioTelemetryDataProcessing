@@ -1,0 +1,270 @@
+---
+title: "Radio telemetry Beacon Plots"
+author: "US Fish and Wildlife Service (contact: Jonah_Withers@fws.gov for issues)"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    toc_collapsed: true
+---
+
+```{r Data Load, echo = FALSE, include=FALSE}
+# Clean house! ----
+rm(list = ls()) # Clear environment
+gc() # Clear ram
+
+requiredPackages <- c("dplyr", "lubridate", "scales", "ggplot2", 
+                      "data.table", "htmltools", "xts",
+                      "dygraphs", "kableExtra", "RODBC")
+
+# Function to install any packages not installed
+ipak <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+  if (length(new.pkg))
+    install.packages(new.pkg, dependencies = TRUE)
+  sapply(pkg, require, character.only = TRUE)
+}
+
+# Load packages
+ipak(requiredPackages)
+
+# > Connect to access database ####
+
+# Identify channel to connect to database
+channel <- odbcDriverConnect("Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=../../Databases/WinooskiSalmonTelemetryDatabase.accdb")
+
+# Look at tables and queries within database
+sqlTables(channel)
+
+Tags.0 <- as.data.table(sqlFetch(channel, "qry_FishList")) # Import list of fish info
+
+# Close connection to database
+odbcClose(channel)
+
+```
+
+### - Site Quality Assurance -
+```{r Creating Beacon Figs, echo=FALSE, include=TRUE, warning = FALSE, message = FALSE}
+# QA/QC on beacons ----
+
+# Import receiver files ####
+
+# > Read txt files with GMT +4 ####
+FilesGMT4 <- list.files(path = "../RawReceiverDownloads",
+                        pattern="*.txt") # This creates a list of all files in directory
+
+FilesGMT4a <- as.character(data.frame(Files = FilesGMT4) %>%
+                             mutate(FileDate = substr(FilesGMT4, start = 6, stop = 15)) %>%
+                             filter(FileDate > (Sys.Date() - 32)) %>%
+                             dplyr::pull(Files)) 
+
+if(length(FilesGMT4a > 0)){
+  df.GMT4Files <- NULL
+  for (j in 1:length(FilesGMT4a)){
+    y1 <- fread(paste("../RawReceiverDownloads/", FilesGMT4a[j], sep = ""))
+    
+    
+    y2 <- y1 %>%
+      mutate(File = FilesGMT4a[j], # Add file name
+             Site = substr(FilesGMT4a[j], start = 1, stop = 3),  # Update site to filename site
+             timeStamp = as.POSIXct(paste(Date, Time), # Create datetime
+                                    format = "%Y-%m-%d %H:%M:%S",
+                                    origin="1970-01-01",
+                                    tz="Etc/GMT+4")) # Format to GMT+4 (EST)
+    
+    df.GMT4Files <- bind_rows(df.GMT4Files, y2)
+  }
+}
+
+
+
+
+# > Dedup and filter detections prior to study
+df.filtered <- df.GMT4Files %>%
+  distinct(Date, Time, Site, Ant, Freq, Type, Code, Power, .keep_all = TRUE) %>% 
+  filter(Date > as.Date("2021-04-01")| !is.na(Date)) 
+
+
+
+# Filter beacon and reformat columns
+df.timeCorr <- df.filtered %>% 
+  mutate(Date = as.Date(format(timeStamp, "%Y-%m-%d")), # Overwrite date with updated dates
+         Time = format(timeStamp, "%H:%M:%S"), # Overwrite times with updated times
+         DetDateTime = timeStamp, # remove timestamp column
+         Site = as.integer(Site),
+         FreqCode = paste0(Freq, 0, " ", Code)) %>% 
+  dplyr::select(-timeStamp) 
+
+df.Rec.1 <- df.timeCorr %>% 
+  filter(FreqCode == "164.480 25") %>% # Filter frequency we want to increase processing speed
+  group_by(FreqCode, Site) %>%
+  arrange(Site, DetDateTime) %>%
+  ungroup() %>%
+  mutate(Site = as.integer(Site)) %>%
+  as.data.frame()
+
+df.Rec.1.Sum <- df.Rec.1 %>%
+  group_by(Site, Date) %>%
+  summarise(detections = n(), Power = mean(Power, na.rm = TRUE)) %>%
+  mutate(Date = as.Date(Date))
+
+
+
+
+
+# Prop. of Det. per Day ----
+## Calculate the number of beacons detected on each receiver on a given day. 
+### Since they ping every 5 minutes, there should be 288
+
+# Need to add any dates that may be missing for a given receiver. So create dataframe with all dates and stations
+## Ultimately need to update this to remove dates past download date
+Miss.Dat <- expand.grid(Site = c(seq(from = 101, to = 114, by = 1), 
+                                 seq(from = 200, to = 208, by = 1)), 
+                        Date = seq(from = as_date(Sys.Date() - 32),
+                                   to = as_date(Sys.Date()), by = 1)) %>%
+  mutate(detections = 0, Site = as.integer(Site), Date = as.Date(Date))
+
+
+df.Rec.2 <- df.Rec.1.Sum %>%
+  bind_rows(Miss.Dat) %>% # Add any dates not included for each station
+  arrange(-detections) %>%
+  distinct(Date, Site, .keep_all = TRUE) %>% # Remove stations that have both 0 detections and data present on a given day
+  filter(Date > as.Date("2021-04-01")) %>% # Remove data prior to start of study (Ideally this would be the receiver deployment dates)
+  mutate(flag = ifelse(detections > 273 &  detections < 302, "Good", "Flag")) %>%
+  filter(Date > (Sys.Date() - 32))  # Only look at this past week's data
+
+
+
+# > Noise ####
+df.Noise <- df.timeCorr %>% 
+  # mutate(FreqCode = paste0(Freq, 0, " ", Code)) %>% 
+  filter(FreqCode != "164.480 25", # Remove beacons
+         FreqCode != "164.380 25", # Remove tag drag
+         !FreqCode %in% substr(Tags.0$TagID, 6, 16)) %>% 
+  mutate(Bin = cut(Power, breaks = seq(-50, -140, -10))) %>% 
+  group_by(Bin, Date, Site) %>%
+  summarise(NoiseDet = n())
+
+
+
+
+
+# Plot
+Sites <- df.Rec.2 %>% 
+  arrange(Site) %>% 
+  distinct(Site) %>%
+  pull(Site)
+
+
+
+# # Plot with GGplot2
+# for(i in 1:length(Sites)){
+#   tempDat <- df.Rec.2 %>%
+#     filter(Site == Sites[i])
+#   
+#   # plots[[i]]
+#   myplot.1 <- tempDat %>%
+#     ggplot(aes(x = Date, y = detections)) +
+#     geom_point() +
+#     scale_x_date(labels = date_format("%Y-%m-%d"), date_breaks = "5 day",
+#                  limits = c(min(as.Date(df.Rec.1$Date), na.rm = TRUE), 
+#                             max(as.Date(df.Rec.1$Date), na.rm = TRUE))) +
+#     geom_hline(yintercept = c(273, 302), 
+#                color = "red",
+#                size = .1,
+#                linetype = "solid") +
+#     labs(x = "Date", y = "Daily Detections", title = paste("Site:", Sites[i], sep = ""))+
+#     theme_bw() +
+#     theme(axis.text.x = element_text(angle = 45, hjust = 1))
+#   
+#   
+#   ggsave(filename = paste("../plots/", Sites[i], ".png", sep = ""),
+#          plot = myplot.1)
+# }
+
+
+
+
+
+
+
+# Dygraphs for RMD ----
+# > Beacon count ####
+mydyplots.count <- lapply(1:23, function(i) dygraph(xts(x = df.Rec.2 %>%
+                                                          filter(Site == Sites[i]) %>%
+                                                          ungroup() %>%
+                                                          select(Date, detections),
+                                                        order.by = df.Rec.2 %>%
+                                                          filter(Site == Sites[i]) %>%
+                                                          ungroup() %>%
+                                                          pull(Date)),
+                                                    main = paste("Beacon at Station:",
+                                                                 Sites[i], sep = " ")) %>%
+                            dyRangeSelector() %>%
+                            dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
+                            dyAxis("y", label = "Number of Detections") %>%
+                            dyAxis("x", label = "Date") %>%
+                            dyLimit(as.numeric(288), color = "black") %>%
+                            dyShading(from = as.numeric(273), to = as.numeric(302),
+                                      axis = "y", color = "#CCEBD6"))
+
+
+
+
+# > Beacon Power ####
+mydyplots.power <- lapply(1:23, function(j) dygraph(xts(x = df.Rec.2 %>% 
+                                                          filter(Site == Sites[j]) %>%
+                                                          ungroup() %>%
+                                                          select(Date, Power),
+                                                        order.by = df.Rec.2 %>%
+                                                          filter(Site == Sites[j]) %>%  
+                                                          ungroup() %>%
+                                                          pull(Date)),
+                                                    main = paste("Beacon at Station:",
+                                                                 Sites[j], sep = " ")) %>%
+                            dyRangeSelector() %>%
+                            dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
+                            dyAxis("y", label = "Daily Mean Power (dB)", valueRange = c(-110, -55)) %>%
+                            dyAxis("x", label = "Date"))
+```
+
+### Beacon time series
+The pupose of these plots is to allow users the ability to examine receiver performance on a daily basis by seeing if a tag (beacon) with a known ping rate (five minutes) is being detected at the expected intervals. Since beacons are set to fire every five minutes, the expected number of detections within a day is 288. 
+If detections within a given day are less than or greater than 288 the beacon may be out of range, the receiver may not be recording or logging correctly, or there may be an excessive amount of noise that is not being filtered out. 
+```{r Plotting Beacon Detections, echo = FALSE, include = TRUE}
+# for printing the maps
+htmltools::tagList(mydyplots.count)
+```
+
+
+### Site noise
+The pupose of these plots is to allow users the ability to examine receiver performance on a daily basis by examining site noise. Noise is considered any detection that does not coincide with a tag ID. This does not include false positives from our tag IDs.
+```{r Plotting Noise, echo = FALSE, include = TRUE, warning = FALSE}
+for(f in 1:length(Sites)){
+  tempdat1 <- df.Noise %>%
+    filter(Site == Sites[f])
+  
+  print(tempdat1 %>%
+          ggplot() +
+          geom_bar(aes(x = Date, y = NoiseDet, fill = factor(Bin)),
+                   color = "black",
+                   stat = 'identity') +
+          scale_x_date(labels = date_format("%Y-%m-%d"),
+                       date_breaks = "2 day") +
+          labs(x = "Date",
+               y = "Daily Noise Detections",
+               fill = "Power",
+               title = paste("Site:", Sites[f], sep = "")) +
+          theme_bw() +
+          theme(axis.text.x = element_text(angle = 45, hjust = 1)))
+}
+```
+
+
+### Beacon Power
+The pupose of these plots is to allow users the ability to examine mean beacon power on a daily basis. If power of a beacon drastically changes then the site needs to be visited and examined for potentially issues (i.e. check BNC connections, check receiver settings, and check antenna and coax cable for damage).
+```{r Plotting Beacon Power, echo = FALSE, include = TRUE, warning = FALSE}
+# for printing the maps
+htmltools::tagList(mydyplots.power)
+```
