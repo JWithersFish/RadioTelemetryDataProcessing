@@ -65,8 +65,8 @@ DF.Clean <- DF.Clean.0 %>%
   mutate(DetDateTime = with_tz(as.POSIXct(DetDateTime, format = "%Y-%m-%dT%H:%M:%SZ", 
                                   origin = "1970-01-01", 
                                   tz = "UTC"), tzone = "Etc/GMT+4"),
-         Release = with_tz(as.POSIXct(Release, format = "%Y-%m-%dT%H:%M:%SZ", 
-                              origin = "1970-01-01", 
+         Release = with_tz(as.POSIXct(Release, format = "%Y-%m-%dT%H:%M:%SZ",
+                              origin = "1970-01-01",
                               tz = "UTC"), tzone = "Etc/GMT+4"),
          sunrise = with_tz(as.POSIXct(sunrise, format = "%Y-%m-%dT%H:%M:%SZ", 
                               origin = "1970-01-01", 
@@ -81,15 +81,15 @@ DF.Clean <- DF.Clean.0 %>%
 LastDet <- DF.Clean %>%
   arrange(desc(DetDateTime)) %>% 
   distinct(TagID, .keep_all = TRUE) %>% 
-  left_join(Strain.0 %>% 
-              mutate(TagID = substr(TagID, 6, 17)), by = "TagID") %>% 
   filter(!is.na(GeneticStrain))
 
 LastDetSum <- LastDet %>% 
   # mutate(ReleaseYear = ifelse(Release < as.Date("2020-01-01"), "2019", 
   #                             ifelse(Release > as.Date("2020-01-01") & Release < as.Date("2021-01-01"), 
   #                                    "2020", "2021"))) %>% 
-  mutate(River_Segment = factor(case_when(River.Km < 16.51489 ~ "Below Winooski One", 
+  mutate(River_Segment = factor(case_when(River.Km == 0.00000 ~ "At River Mouth",
+    River.Km < 5 ~ "Near River Mouth",
+                              River.Km >= 5 & River.Km < 16.51489 ~ "Below Winooski One", 
                               River.Km >= 16.51489 & River.Km < 18.77591 ~ "Below Gorge", 
                               River.Km >= 18.77591 &  River.Km < 29.14046 ~ "Below Essex 19",
                               River.Km >= 29.14046 & River.Km < 49.19853 ~ "Essex 19 to Richmond",
@@ -97,7 +97,8 @@ LastDetSum <- LastDet %>%
                               River.Km >= 55.81481 ~ "Above Jonesville",
                               TRUE ~  "other"), 
                               levels = c("Above Jonesville", "Richmond to Jonesville", "Essex 19 to Richmond", 
-                                         "Below Essex 19", "Below Gorge", "Below Winooski One")))
+                                         "Below Essex 19", "Below Gorge", "Below Winooski One", 
+                                         "Near River Mouth", "At River Mouth")))
 
 LastDetSum.1 <- LastDetSum %>% 
   group_by(River_Segment, GeneticStrain) %>% 
@@ -178,7 +179,7 @@ kable(LastDetSum.1) %>%
 Difference between the maximum and minimum river kilometer within a given week are calculated for each transmitter. If the difference is > 400 m the cell receivers a green background, if the dfference is < 400 m the cell receivers a red background, and if there are no data available within the given week the cell receivers a yellow background. 
 ```{r 2020 Movement Table, echo = FALSE, include = TRUE, message = FALSE, warning = FALSE}
 DF.Clean %>% 
-  filter(Release > as.Date("2021-01-01")) %>% 
+  filter(Release > as.Date("2021-01-01")) %>%
   mutate(SampYear = format(DetDateTime, format = "%Y"), 
          SampWeek = format(DetDateTime, format = "%W")) %>% 
   dplyr::select(SampYear, SampWeek, TagID, River.Km) %>% 
@@ -237,7 +238,7 @@ Each fish has a unique color associated with its detected locations
 ### River Kilometer for each fish
 ```{r figurename, echo=FALSE, fig.align = 'center', out.width = '90%'}
 files <- list.files(path = "../Figures/PostClean/", 
-                    pattern = "*2021.png",
+                    pattern = "^Smolt",
                     full.names = TRUE)
 
 knitr::include_graphics(files)
@@ -249,7 +250,8 @@ knitr::include_graphics(files)
 
 
 ### Fish at Dams
-```{r Dams, echo=FALSE, warning = FALSE, message = FALSE, fig.align = 'center', out.width = '90%'}
+```{r Dams, echo=FALSE, include = TRUE, warning = FALSE, message = FALSE, fig.align = 'center', out.width = '90%', results='asis'}
+cat("\\threecolumn")
 
 # Dam Data ----
 # > Connect to SQL databases ####
@@ -314,7 +316,7 @@ rm(cl)
 
 
 Dams.0 <- Rec.0 %>%
-  filter(test == 1) %>% # Filter out only detections that are deemed true posistives from BIOTAS
+  # filter(test == 1) %>% # Filter out only detections that are deemed true posistives from BIOTAS
   mutate(DetDateTime = as.POSIXct(timeStamp, format = "%Y-%m-%d %H:%M:%S", # Format time to EST
                                 origin = "1970-01-01", 
                                 tz = "Etc/GMT+4"),
@@ -323,52 +325,72 @@ Dams.0 <- Rec.0 %>%
   dplyr::select(TagID, DetDateTime, Site, Power) %>% 
   rbind(DF.Clean %>%
           filter(Site %in% c(102, 103, 104, 105)) %>% 
-          dplyr::select(TagID, DetDateTime, Site, Power))
+          dplyr::select(TagID, DetDateTime, Site, Power)) 
 
 W1D <- Dams.0 %>% 
-  filter(Site %in% c(203, 204, 205, 206, 103))
+  filter(Site %in% c(203, 204, 205, 206, 103)) %>% 
+  mutate(Site = case_when(Site == 203 ~ "WD1 Exit",
+                          Site == 204 ~ "WD1 Spill",
+                          Site == 205 ~ "WD1 Dropper",
+                          Site == 206 ~ "WD1 Forebay",
+                          Site == 103 ~ "WD1 Elevated"))
 
 Gorge <- Dams.0 %>% 
-  filter(Site %in% c(104, 105, 207, 208))
+  filter(Site %in% c(104, 105, 207, 208)) %>% 
+  mutate(Site = case_when(Site == 104 ~ "Gorge Exit",
+                          Site == 207 ~ "Gorge Bypass",
+                          Site == 208 ~ "Gorge Chain",
+                          Site == 105 ~ "Gorge Forebay"))
 
 
 
-Tags <- Tags.0 %>% 
-  dplyr::select(TagID) %>% 
-  filter(substr(TagID, 1, 4) > 2020) %>% 
-  mutate(TagID = substr(TagID, 6, 17)) %>% 
-  unique()
+# Tags <- Tags.0 %>% 
+#   dplyr::select(TagID) %>% 
+#   filter(substr(TagID, 1, 4) > 2020) %>% 
+#   mutate(TagID = substr(TagID, 6, 17)) %>% 
+#   unique()
 
-for(h in 1:length(Tags)){
+W1D_Tags <- unique(W1D$TagID)
+
+for(h in 1:length(W1D_Tags)){
   W1temp <- W1D %>%
-    filter(TagID == Tags[h])
-  
+    filter(TagID == W1D_Tags[h]) %>%
+    mutate(Site = as.factor(Site)) %>%
+    filter(DetDateTime > as.Date("2021-04-13"))
+
  print(W1temp %>%
-    ggplot(aes(x = DetDateTime, y = Power, color = factor(Site))) +
+    ggplot(aes(x = DetDateTime, y = Power, color = Site)) +
     stat_smooth(method = "loess", se = FALSE, lty = 2) +
+      # geom_point() +
       scale_x_datetime(breaks = pretty_breaks(20)) +
+      scale_y_continuous(limits = c(-120, -50),
+                         breaks = seq(-120, -50, by = 5)) +
     labs(x = "Date",
          y = "Power",
          color = "Site",
-         title = paste("TagID:", Tags[h], sep = "")) +
+         title = paste("TagID:", W1D_Tags[h], sep = "")) +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 90, hjust = 1)))
 }
 
+G_Tags <- unique(Gorge$TagID)
 
-
-for(k in 1:length(Tags)){
+for(k in 1:length(G_Tags)){
   Gtemp <- Gorge %>%
-    filter(TagID == Tags[k])
-  
+    filter(TagID == G_Tags[k]) %>% 
+    mutate(Site = as.factor(Site))
+
  print(Gtemp %>%
-    ggplot(aes(x = DetDateTime, y = Power, color = factor(Site))) +
-    scale_x_datetime(breaks = pretty_breaks(20)) +
+    ggplot(aes(x = DetDateTime, y = Power, color = Site)) +
+      # geom_point() +
+      scale_x_datetime(breaks = pretty_breaks(20)) +
     stat_smooth(method = "loess", se = FALSE, lty = 2) +
+            scale_y_continuous(limits = c(-120, -50),
+                         breaks = seq(-120, -50, by = 5)) +
       labs(x = "Date",
          y = "Power",
          color = "Site",
-         title = paste("TagID:", Tags[k], sep = "")) +
+         title = paste("TagID:", G_Tags[k], sep = "")) +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 90, hjust = 1)))
 }
@@ -382,33 +404,6 @@ for(k in 1:length(Tags)){
 
 # Import receiver files ####
 # Read in files for 2020
-FilesGMT5 <- list.files(path = "../RawReceiverDownloads/GMTPlus5",
-                        pattern = "*.txt") # This creates a list of all files in directory
-
-FilesGMT5a <- as.character(data.frame(Files = FilesGMT5) %>% 
-  mutate(FileDate = substr(FilesGMT5, start = 6, stop = 15)) %>% 
-  filter(FileDate > (Sys.Date() - 32)) %>%
-  dplyr::select(Files) %>% 
-  pull())
-
-if(length(FilesGMT5a > 0)){
-  df.GMT5Files <- NULL # Create empty shell df to drop files into
-  for (i in 1:length(FilesGMT5a)){
-    x1 <- fread(paste("../RawReceiverDownloads/GMTPlus5/", FilesGMT5a[i], sep = ""))
-    
-    x2 <- x1 %>%
-      mutate(File = FilesGMT5a[i], # Add file name
-             Site = substr(FilesGMT5a[i], start = 1, stop = 3), # Update site to filename site
-             timeStamp = as.POSIXct(paste(Date, Time), # Create datetime
-                                    format = "%Y-%m-%d %H:%M:%S",
-                                    origin="1970-01-01",
-                                    tz="Etc/GMT+5"), # Format to GMT+5
-             timeStamp = with_tz(timeStamp, tzone = "Etc/GMT+4")) # Convert timestamp to GMT+4 (EST)
-    
-    df.GMT5Files <- bind_rows(df.GMT5Files, x2)
-  }
-}
-
 # > Read txt files with GMT +4 ####
 FilesGMT4 <- list.files(path = "../RawReceiverDownloads",
                         pattern="*.txt") # This creates a list of all files in directory
@@ -418,39 +413,26 @@ FilesGMT4a <- as.character(data.frame(Files = FilesGMT4) %>%
                              filter(FileDate > (Sys.Date() - 32)) %>%
                              dplyr::pull(Files)) 
 
-if(length(FilesGMT4a > 0)){
-  df.GMT4Files <- NULL
-  for (j in 1:length(FilesGMT4a)){
-    y1 <- fread(paste("../RawReceiverDownloads/", FilesGMT4a[j], sep = ""))
-    
-    
-    y2 <- y1 %>%
-      mutate(File = FilesGMT4a[j], # Add file name
-             Site = substr(FilesGMT4a[j], start = 1, stop = 3),  # Update site to filename site
-             timeStamp = as.POSIXct(paste(Date, Time), # Create datetime
-                                    format = "%Y-%m-%d %H:%M:%S",
-                                    origin="1970-01-01",
-                                    tz="Etc/GMT+4")) # Format to GMT+4 (EST)
-    
-    df.GMT4Files <- bind_rows(df.GMT4Files, y2)
-  }
+df.GMT4Files <- NULL
+for (j in 1:length(FilesGMT4a)){
+  y1 <- fread(paste("../RawReceiverDownloads/", FilesGMT4a[j], sep = ""))
+  
+  y2 <- y1 %>%
+    mutate(File = FilesGMT4a[j], # Add file name
+           Site = substr(FilesGMT4a[j], start = 1, stop = 3),  # Update site to filename site
+           timeStamp = as.POSIXct(paste(Date, Time), # Create datetime
+                                  format = "%Y-%m-%d %H:%M:%S",
+                                  origin="1970-01-01",
+                                  tz="Etc/GMT+4")) # Format to GMT+4 (EST)
+  
+  df.GMT4Files <- bind_rows(df.GMT4Files, y2)
 }
 
 
-
-# Combine dataframes
-if(exists("df.GMT4Files", inherits = FALSE) & exists("df.GMT5Files", inherits = FALSE)){
-  df.all <- rbind(df.GMT4Files, df.GMT5Files)
-  } else if(exists("df.GMT4Files", inherits = FALSE) & !exists("df.GMT5Files", inherits = FALSE)){
-    df.all <- df.GMT4Files
-    } else {
-      df.all <- df.GMT5Files
-      }
-
 # > Dedup and filter detections prior to study
-df.filtered <- df.all %>%
+df.filtered <- df.GMT4Files %>%
   distinct(Date, Time, Site, Ant, Freq, Type, Code, Power, .keep_all = TRUE) %>% 
-  filter(Date > as.Date("2019-09-01")| !is.na(Date)) 
+  filter(Date > as.Date("2021-04-01")| !is.na(Date)) 
 
 
 

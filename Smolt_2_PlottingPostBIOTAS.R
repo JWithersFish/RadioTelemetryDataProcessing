@@ -55,7 +55,7 @@ Tags.0 <- as.data.table(sqlFetch(channel, "qry_FishList")) # Import list of tags
 Float.0 <- as.data.table(sqlFetch(channel, "qry_FloatDetections")) # Import mobile tracking data
 Float.0[, DetDateTime := with_tz(DetDateTime, tzone = "Etc/GMT+4")] # Specify timezone mobile data are recorded in
 Sites.0 <- as.data.table(sqlFetch(channel, "LookUpTbl_Site")) # Import list of tags
-
+Strain.0 <- as.data.table(sqlFetch(channel, "tbl_SmoltGenetics")) # Import list of genetic strain
 
 # Close connection to database
 odbcClose(channel)
@@ -66,7 +66,7 @@ odbcClose(channel)
 # List all SQL databases post BIOTAS
 
 SQLDBs <- list.files(path = "../1_CleaningWithAbtas/Python/Data/",
-                     pattern = "^Winooski_2020", full.names = FALSE) 
+                     pattern = "*Winooski_2020", full.names = FALSE) 
 
 # Import desired tables from SQL databases and append
 my.list <- vector("list", length(SQLDBs)) # Create shell to append dataframes to
@@ -132,7 +132,7 @@ Rec.1 <- Rec.0 %>%
   mutate(timeStamp = as.POSIXct(timeStamp, format = "%Y-%m-%d %H:%M:%S", # Format time to EST
                                 origin = "1970-01-01", 
                                 tz = "Etc/GMT+4"),
-         recID = as.character(recID)) 
+         recID = as.character(recID))
 
 
 
@@ -393,35 +393,25 @@ Rec.4 <- Rec.3 %>%
 
 
 # Standardize Release datetime to EST ----
-# Tags.GMT4 <- Tags.0 %>% 
-#   mutate(ReleaseDateTime = as.POSIXct(as.character(ReleaseDateTime), 
-#                                       format = "%Y-%m-%d %H:%M:%S", 
-#                                       origin = "1970-01-01", 
-#                                       tz = "Etc/GMT+4")) %>% 
-#   filter(ReleaseDateTime < as.Date("2019-11-03") | 
-#            (ReleaseDateTime >= as.Date("2020-03-08") &
-#               ReleaseDateTime < as.Date("2020-11-01")))
-# 
-# Tags.1 <- Tags.0 %>%
-#   mutate(ReleaseDateTime = with_tz(as.POSIXct(as.character(ReleaseDateTime), 
-#                                               format = "%Y-%m-%d %H:%M:%S", 
-#                                               origin = "1970-01-01", 
-#                                               tz = "Etc/GMT+5"), tz = "Etc/GMT+4")) %>% 
-#   filter((ReleaseDateTime >= as.Date("2019-11-03") &
-#             ReleaseDateTime < as.Date("2020-03-08")) | 
-#            ReleaseDateTime >= as.Date("2020-11-01")) %>%
-#   bind_rows(Tags.GMT4) %>%
-#   rename(Release = ReleaseDateTime) 
+Tags.1 <- Tags.0 %>%
+  mutate(ReleaseDateTime = as.POSIXct(as.character(ReleaseDateTime),
+                                      format = "%Y-%m-%d %H:%M:%S",
+                                      origin = "1970-01-01",
+                                      tz = "Etc/GMT+4")) %>%
+  filter(ReleaseDateTime > as.Date("2021-01-01")) %>% 
+  rename(Release = ReleaseDateTime) %>% 
+  left_join(Strain.0, by = "TagID")
 
-Tags.1 <- Tags.0
+
+
 
 # > Match detections with fishIDs ####
 Rec.5 <- Tags.1 %>%
   filter(substr(TagID, start = 1, stop = 4) > 2020) %>% # Select only smolts
   mutate(TagID = substr(TagID, 6, length(TagID))) %>% # Remove year from tagID (Freqcode)
   dplyr::select(TagID, 
-                # Release, 
-                FloyTag, Sex, TL, Weight, ClipType) %>%
+                Release,
+                FloyTag, Sex, TL, Weight, ClipType, GeneticStrain) %>%
   inner_join(Rec.4, by = "TagID") %>% # Match tag list with data
   dplyr::select(-date) %>%
   group_by(TagID) %>%
@@ -484,23 +474,23 @@ Rec.5 <- Tags.1 %>%
 
 # > Import tributary coords ####
 # Import tributary coords
-Tribs <- read.csv("../ArcGIS/WinooskiRiver_UTM18TributaryConfluences.csv", 
-                  header = TRUE, 
-                  stringsAsFactors = FALSE)
-
-# Calculate river distance for all tributaries, Color code for plotting purposes, and filter only stream orders > 2
-TribDist.1 <- CalcRivKm(Tribs,
-                        PointCRS = CRS("+proj=utm +zone=18 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0"),
-                        Latitude = "Latitude",
-                        Longitude = "Longitude",
-                        Path2River = "../ArcGIS",
-                        RiverShape = "WinooskiRiver_MouthToBolton_UTM18",
-                        OutputCRS = CRS("+proj=utm +zone=18 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")) %>% 
-  filter(STREAM_ORD > 2) %>% # Filter out small order streams
-  mutate(Trib_Color = case_when(STREAM_ORD == 3 ~ "#6BAED6", # Color code stream by stream_order
-                                STREAM_ORD == 4 ~ "#2171B5",
-                                STREAM_ORD == 5 ~ "#08306B",
-                                TRUE ~ "white"))
+# Tribs <- read.csv("../ArcGIS/WinooskiRiver_UTM18TributaryConfluences.csv", 
+#                   header = TRUE, 
+#                   stringsAsFactors = FALSE)
+# 
+# # Calculate river distance for all tributaries, Color code for plotting purposes, and filter only stream orders > 2
+# TribDist.1 <- CalcRivKm(Tribs,
+#                         PointCRS = CRS("+proj=utm +zone=18 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0"),
+#                         Latitude = "Latitude",
+#                         Longitude = "Longitude",
+#                         Path2River = "../ArcGIS",
+#                         RiverShape = "WinooskiRiver_MouthToBolton_UTM18",
+#                         OutputCRS = CRS("+proj=utm +zone=18 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")) %>% 
+#   filter(STREAM_ORD > 2) %>% # Filter out small order streams
+#   mutate(Trib_Color = case_when(STREAM_ORD == 3 ~ "#6BAED6", # Color code stream by stream_order
+#                                 STREAM_ORD == 4 ~ "#2171B5",
+#                                 STREAM_ORD == 5 ~ "#08306B",
+#                                 TRUE ~ "white"))
 
 
 
@@ -512,8 +502,8 @@ TribDist.1 <- CalcRivKm(Tribs,
 # > Plot & Write to disk ####
 Rec.6 <- Rec.5 %>% 
   dplyr::select(TagID, 
-                # Release,  
-                FloyTag, Sex, TL, Weight, ClipType, DetDateTime, 
+                Release,
+                GeneticStrain, FloyTag, Sex, TL, Weight, ClipType, DetDateTime, 
                 Latitude, Longitude, Power, Site, River.Km, SiteName, sunrise, sunset, 
                 day_night, ActiveVsFixed, Riv.Sys, Plotcolor, noiseRatio, lag, lagDiff, 
                 postTrue_A, postTrue_M, consDet_A, detHist_A, fileName, hitRatio_A, test, 
@@ -522,7 +512,7 @@ Rec.6 <- Rec.5 %>%
                                Plotcolor == "Day " ~ "Day",
                                Plotcolor == "Night Huntinton" ~ "Night Huntington",
                                Plotcolor == "Day Huntinton" ~ "Day Huntington", 
-                               TRUE ~ Plotcolor))
+                               TRUE ~ Plotcolor)) 
 
 
 
@@ -549,100 +539,117 @@ fish <- unique(Rec.6$TagID)
 
 system.time({
 for(i in 1:length(fish)){
-    tempData <- Rec.6 %>% 
-      filter(TagID == fish[i]) # subset data for unique fish
-    
-    myplot <- ggplot(data = tempData) +
-      geom_point(aes(x = DetDateTime, y = River.Km, 
-                     color = Plotcolor,
-                     shape = ActiveVsFixed), 
-                 na.rm = TRUE, 
-                 size = 1.25) +
-      scale_shape_manual(values = c("Fixed" = 16, 
-                                    "Active" = 17)) +
-      scale_color_manual(values = c("Day" = "#D55E00",
-                                    "Night" = "#000000",
-                                    "Night Huntington" = "#999999",
-                                    "Day Huntington" = "#CC79A7")) +
-      # scale_x_datetime(labels = date_format("%Y-%m-%d"),
-      #                  date_breaks = "15 day",
-      #                  limits = c(min(Rec.6$Release, na.rm = TRUE), 
-      #                             max(Rec.6$DetDateTime, na.rm = TRUE))) +
-      scale_y_continuous(
-        name = "River Km", 
-        sec.axis = sec_axis(~ ., 
-                            name = "Site", 
-                            breaks = c(
+
+      tempData <- Rec.6 %>%
+        filter(TagID == fish[i]) %>% # subset data for unique fish
+        filter(DetDateTime > as.Date("2021-04-12"), Site %in% c(101, 102, 103, 104, 105, 200, 201, 202, "Float"))
+      
+      myplot <- ggplot(data = tempData) +
+        geom_point(aes(x = DetDateTime, y = River.Km,
+                       color = Plotcolor,
+                       shape = ActiveVsFixed),
+                   na.rm = TRUE,
+                   size = 1.25) +
+        scale_shape_manual(values = c("Fixed" = 16,
+                                      "Active" = 17)) +
+        scale_color_manual(values = c("Day" = "#D55E00",
+                                      "Night" = "#000000",
+                                      "Night Huntington" = "#999999",
+                                      "Day Huntington" = "#CC79A7")) +
+        scale_x_datetime(labels = date_format("%Y-%m-%d"),
+                         # date_breaks = "5 day",
+                         limits = c(min(Rec.6$Release, na.rm = TRUE),
+                                    max(Rec.6$DetDateTime, na.rm = TRUE)),
+                         breaks = pretty_breaks(breaks = 20)) +
+        scale_y_continuous(
+          limits = c(0, 35),
+          name = "River Km",
+          sec.axis = sec_axis(~ .,
+                              name = "Site",
+                              breaks = c(
           # 3.26989, 15.965215, 18.718525,
           # 28.84083, 49.30761, 56.54053, # Measured site river.km from arcGIS
           # 61.28562, 66.61284),
-                              0,
-                              1.5,
-                              11.28,
-                              3.283793, 16.579020, 18.76995, 28.87375,
-                              49.51102, 56.771230, 61.491209, 66.822979), # Pulled from snapped river.km distances
+                                0,
+                                1.5,
+                                11.28,
+                                3.283793, 15.565960,
+                                16.579020, 18.76995, 28.87375,
+                                49.51102, 56.771230, 61.491209, 66.822979), # Pulled from snapped river.km distances
           labels = c(
             "Bridge",
             "Derway Park",
             "Ethan Allen",
-            'BWWTP', 'Winooski One',
+            'BWWTP', 
+            'Winooski WWTP',
+            'Winooski One',
             'Gorge 18',
             'Essex 19',
             'Richmond',
             'Red House', 'Grey House', 'Bolton Falls'))) +
-      theme_bw() +
-      theme(axis.text = element_text(size = 11), 
-            axis.text.x = element_text(angle = 45, 
-                                       hjust = 1, 
-                                       size = 6), 
-            axis.text.y.right = element_text(size = 6)) +
-      geom_line(aes(x = DetDateTime, y = River.Km)) +
-      # geom_point(aes(x = min(tempData$Release, na.rm = TRUE), y = 53.45484), 
-      #            color = "#009E73", 
-      #            shape = "star",
-      #            size = 1.75) + # Add release site and time
-      labs(x = "", y = "River Km", 
-           color = "Time of Day", 
-           shape = "Detection type") +
-      geom_hline(yintercept = TribDist.1$River.Km, 
-                 color = TribDist.1$Trib_Color, 
-                 size = .1, 
-                 linetype = "solid") +
+        geom_hline(yintercept = 28.84083,
+                   color = "red",
+                   size = .1,
+                   linetype = "solid") + # Add a line to denote fallback
+        geom_hline(yintercept = c(0, 1.5, 11.28,
+                                  3.283793, 15.565960, 16.579020, 18.700732, 18.839175, 28.581155, 29.166349, # These are river distances of receivers derived from snapping to river line
+                                  49.415475, 49.606572, 55.928899, 55.998692, 56.771230, 61.491209, 66.822979),
+                   #c( # These are direct measurements
+                   #   3.26989, 15.41554, 16.51489, 18.66114,
+                   #   18.77591,
+                   #   28.54120, 29.14046, 49.19853, 
+                   #   49.41669, 55.81481, 55.94962, 56.54053, 
+                   #   61.28562, 66.61284),
+                   color = "gray25",
+                   size = .1,
+                   linetype = "dashed") +
+        theme_bw() +
+        theme(axis.text = element_text(size = 11),
+              axis.text.x = element_text(angle = 45,
+                                         hjust = 1,
+                                         size = 6),
+              axis.text.y.right = element_text(size = 6)) +
+        geom_line(aes(x = DetDateTime, y = River.Km)) +
+        labs(x = "", y = "River Km",
+             color = "Time of Day",
+             shape = "Detection type") +
+        if(tempData$GeneticStrain[1] %in% c("TT WD1", "Max WD1")){
+          geom_point(aes(x = min(tempData$Release, na.rm = TRUE), y = 16.579020),
+                     color = "#009E73",
+                     shape = "star",
+                     size = 1.75) # Add release site and time
+          } else{
+            geom_point(aes(x = min(tempData$Release, na.rm = TRUE), y = 27.93853),
+                       color = "#009E73",
+                       shape = "star",
+                       size = 1.75)
+            }  # Add release site and time
+      # geom_hline(yintercept = TribDist.1$River.Km, 
+      #            color = TribDist.1$Trib_Color, 
+      #            size = .1, 
+      #            linetype = "solid") +
       # geom_point(data = Tags.Rec %>% 
       #              filter(TagID == fish[i]),
       #            aes(x = DtTmRcv, y = River.Km),
       #            color = "#E69F00",
       #            shape = "star",
       #            size = 1.75) +
-      geom_hline(yintercept = 28.84083, 
-               color = "red", 
-               size = .1, 
-               linetype = "solid") + # Add a line to denote fallback
-      geom_hline(yintercept = #c( # These are direct measurements
-                   #   3.26989, 15.41554, 16.51489, 18.66114,
-                   #   18.77591,
-                   #   28.54120, 29.14046, 49.19853, 
-                   #   49.41669, 55.81481, 55.94962, 56.54053, 
-                   #   61.28562, 66.61284), 
-                   c(       0,
-                            1.5,
-                            11.28,
-                     3.283793, 15.565960, 16.579020, 18.700732, 18.839175, 28.581155, 29.166349, # These are river distances of receivers derived from snapping to river line
-                     49.415475, 49.606572, 55.928899, 55.998692, 56.771230, 61.491209, 66.822979),
-                 color = "gray25", 
-                 size = .1, 
-                 linetype = "dashed")
+        
     
-    ggsave(filename = paste("../Figures/PreClean/Fish", 
-                            fish[i], "_", tempData$Sex[1], ".png", sep = ""), 
+      
+      
+    ggsave(filename = paste("../Figures/PreClean/Smolt_", 
+                            fish[i], "_", tempData$GeneticStrain[1], ".png", sep = ""), 
            plot = myplot,
            width = 7, 
            height = 5)
     
     
+    
+    
     fwrite(x = tempData,   # write each subsetted fish dataframe out to csv
-           file = paste("../Tables/PreClean/Fish", 
-                        fish[i],"_", tempData$Sex[1], # use sep ="\t" for tab delimited and "," for comma delim
+           file = paste("../Tables/PreClean/Smolt_", 
+                        fish[i],"_", tempData$GeneticStrain[1], # use sep ="\t" for tab delimited and "," for comma delim
                         ".csv", sep = ""), sep = ",", col.names = TRUE,
            row.names = FALSE)
   }
