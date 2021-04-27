@@ -268,7 +268,7 @@ for(i in 1:length(fish)){
                                     "Night Huntington" = "#999999",
                                     "Day Huntington" = "#CC79A7")) +
       scale_x_datetime(labels = date_format("%Y-%m-%d"),
-                       date_breaks = "15 day",
+                       breaks = pretty_breaks(n = 20),
                        limits = c(min(DF.Clean.1$Release, na.rm = TRUE), 
                                   max(DF.Clean.1$DetDateTime, na.rm = TRUE))) +
       scale_y_continuous(

@@ -413,6 +413,7 @@ Tags.1 <- Tags.0 %>%
 # > Match detections with fishIDs ####
 Rec.5 <- Tags.1 %>%
   filter(substr(TagID, start = 0, stop = 4) != "2018") %>% # Remove 2018 tags
+  filter(substr(TagID, start = 0, stop = 4) != "2021") %>% # Remove 2021 tags (Smolts)
   mutate(TagID = substr(TagID, 6, length(TagID))) %>% # Remove year from tagID (Freqcode)
   dplyr::select(TagID, Release, FloyTag, Sex, TL, Weight, ClipType) %>%
   inner_join(Rec.4, by = "TagID") %>% # Match tag list with data
