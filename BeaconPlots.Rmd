@@ -132,7 +132,8 @@ df.Rec.2 <- df.Rec.1.Sum %>%
   distinct(Date, Site, .keep_all = TRUE) %>% # Remove stations that have both 0 detections and data present on a given day
   filter(Date > as.Date("2021-04-01")) %>% # Remove data prior to start of study (Ideally this would be the receiver deployment dates)
   mutate(flag = ifelse(detections > 273 &  detections < 302, "Good", "Flag")) %>%
-  filter(Date > (Sys.Date() - 32))  # Only look at this past week's data
+  filter(Date > (Sys.Date() - 32)) # Only look at this past week's data
+
 
 
 
@@ -151,11 +152,39 @@ df.Noise <- df.timeCorr %>%
 
 
 # Plot
-Sites <- df.Rec.2 %>% 
+Sites <- df.Rec.2 %>%  
   arrange(Site) %>% 
   distinct(Site) %>%
   pull(Site)
 
+SiteNames <- df.Rec.2 %>% 
+  mutate(SiteName = case_when(Site == 200 ~ "Burlington Bridge",
+                              Site == 201 ~ "Derway Park",
+                              Site == 202 ~ "Ethan Allen",
+                              Site == 203 ~ "WD1 Outflow",
+                              Site == 204 ~ "W1D Spill",
+                              Site == 205 ~ "W1D Fish Bypass",
+                              Site == 206 ~ "W1D Forebay",
+                              Site == 207 ~ "Gorge Fish bypass",
+                              Site == 208 ~ "Gorge Fish box chain",
+                              Site == 101 ~ "BWWTP",
+                              Site == 102 ~ "W1D WWTP",
+                              Site == 103 ~ "W1D",
+                              Site == 104 ~ "Gorge Downstream",
+                              Site == 105 ~ "Gorge Upstream",
+                              Site == 106 ~ "Essex WWTP",
+                              Site == 107 ~ "Essex Dam",
+                              Site == 108 ~ "Richmond Green",
+                              Site == 109 ~ "Richmond Bridge",
+                              Site == 110 ~ "Huntington River Downstream",
+                              Site == 111 ~ "Huntington River Upstream",
+                              Site == 112 ~ "Red House",
+                              Site == 113 ~ "Grey House",
+                              Site == 114 ~ "Bolton Dam",
+                              TRUE ~ "Unknown")) %>% 
+  arrange(Site) %>% 
+  distinct(Site, .keep_all = TRUE) %>%
+  pull(SiteName)
 
 
 # # Plot with GGplot2
@@ -199,8 +228,8 @@ mydyplots.count <- lapply(1:23, function(i) dygraph(xts(x = df.Rec.2 %>%
                                                           filter(Site == Sites[i]) %>%
                                                           ungroup() %>%
                                                           pull(Date)),
-                                                    main = paste("Beacon at Station:",
-                                                                 Sites[i], sep = " ")) %>%
+                                                    main = paste("Beacon at ",
+                                                                 SiteNames[i], sep = " ")) %>%
                             dyRangeSelector() %>%
                             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
                             dyAxis("y", label = "Number of Detections") %>%
@@ -221,8 +250,8 @@ mydyplots.power <- lapply(1:23, function(j) dygraph(xts(x = df.Rec.2 %>%
                                                           filter(Site == Sites[j]) %>%  
                                                           ungroup() %>%
                                                           pull(Date)),
-                                                    main = paste("Beacon at Station:",
-                                                                 Sites[j], sep = " ")) %>%
+                                                    main = paste("Beacon at ",
+                                                                 SiteNames[j], sep = " ")) %>%
                             dyRangeSelector() %>%
                             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
                             dyAxis("y", label = "Daily Mean Power (dB)", valueRange = c(-110, -55)) %>%
@@ -255,7 +284,7 @@ for(f in 1:length(Sites)){
           labs(x = "Date",
                y = "Daily Noise Detections",
                fill = "Power",
-               title = paste("Site:", Sites[f], sep = "")) +
+               title = paste("Site: ", SiteNames[f], sep = "")) +
           theme_bw() +
           theme(axis.text.x = element_text(angle = 45, hjust = 1)))
 }

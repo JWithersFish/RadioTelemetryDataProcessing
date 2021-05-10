@@ -15,7 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Executive Summary
 
-This document is a weekly summarization of the locations of radio telemetered Atlantic Salmon captured at the Winooski One Dam and released at the canoe launch (Warren and Ruth Beeken Rivershore Preserve) in the Winooski River. The intent of this report is to provide a coarse spatial distribution of tagged fishes' most recent known location. Additionally, this document is intended to provide some quality assurance on receiver performance.  
+This document is a weekly summarization of the locations of radio telemetered Atlantic Salmon smolts released downstream of Winooski One Dam and Essex 19 Dam in the Winooski River. The intent of this report is to provide a coarse spatial distribution of tagged fishes' most recent known location. Additionally, this document is intended to provide some quality assurance on receiver performance.  
 
 ```{r Data Load and Table, echo = FALSE, include=FALSE}
 # Clean house! ----
@@ -227,14 +227,6 @@ DF.Clean %>%
 #   addScaleBar(position = "bottomleft")
 ```
 
-### Mapped Locations of 2 weeks
-
-Each fish has a unique color associated with its detected locations
-```{r Map, echo = FALSE, include = TRUE}
-# for printing the maps
-# tagList(map)
-```
-
 ### River Kilometer for each fish
 ```{r figurename, echo=FALSE, fig.align = 'center', out.width = '90%'}
 files <- list.files(path = "../Figures/PostClean/", 
@@ -243,11 +235,6 @@ files <- list.files(path = "../Figures/PostClean/",
 
 knitr::include_graphics(files)
 ```
-
-
-
-
-
 
 ### Fish at Dams
 ```{r Dams, echo=FALSE, include = TRUE, warning = FALSE, message = FALSE, fig.align = 'center', out.width = '90%', results='asis'}
