@@ -9,7 +9,28 @@
 
 
 
-library(dplyr)
+# Libraries ----
+
+
+
+# > Install and load packages ####
+# Create vector of packages
+requiredPackages <- c("dplyr", "RODBC", "data.table")
+
+# Function to install and load any packages not installed
+ipak <- function(pkg){
+  new.pkg <- pkg[!(pkg %in% installed.packages()[, "Package"])]
+  if (length(new.pkg))
+    install.packages(new.pkg, dependencies = TRUE)
+  sapply(pkg, require, character.only = TRUE)
+}
+
+# Load packages
+ipak(requiredPackages)
+
+
+
+
 
 
 # Moving hex files ----
@@ -123,3 +144,63 @@ for(k in 1:length(txtfiles)){
 if(!dir.exists(paste("../1_CleaningWithAbtas/Python/Data/TrainingDBs"))){
   dir.create(paste("../1_CleaningWithAbtas/Python/Data/TrainingDBs"))
 } 
+
+
+
+
+
+
+
+# Create TagList For BIOTAS -----------------------------------------------
+
+
+# > Connect to access database ####
+
+# Identify channel to connect to database
+channel <- odbcDriverConnect("Driver={Microsoft Access Driver (*.mdb, *.accdb)};DBQ=../../Databases/WinooskiSalmonTelemetryDatabase.accdb")
+
+# Look at tables and queries within database
+sqlTables(channel)
+
+Tags.0 <- as.data.table(sqlFetch(channel, "qry_FishList")) # Import list of tags
+Strain.0 <- as.data.table(sqlFetch(channel, "tbl_SmoltGenetics"))
+
+# Close connection to database
+odbcClose(channel)
+
+
+
+# Create tag last by selecting appropriate columns and renaming/reformatting
+# First create list of beacons to append to tag list 
+Beacon.0 <- data.frame(FreqCode = c("164.480 25", "164.480 26", "164.380 25")) %>% 
+  mutate(PIT_ID = rep(NA, 3),
+         PulseRate = c(300, 4, 300),
+         MortRate = rep(NA, 3),
+         CapLoc = "All Stations",
+         RelLoc = "All Stations", 
+         TagType = "Beacon",
+         Length = rep(NA, 3),
+         Sex = rep(NA, 3),
+         RelDate = rep(as.Date("2019-01-01"), 3))
+
+
+MasterTag.0 <- Tags.0 %>%
+  left_join(Strain.0, by = "TagID") %>% 
+  mutate(FreqCode = substr(TagID, start = 6, 17),
+         PIT_ID = FloyTag,
+         PulseRate = `PingRate(sec)`,
+         MortRate = NA,
+         CapLoc = ifelse(substr(TagID, start = 1, stop = 4) < 2021, "Winooski Lift", "Hatchery"),
+         RelLoc = ifelse(is.na(GeneticStrain), "Canoe Launch", GeneticStrain),
+         TagType = "Study",
+         Length = TL,
+         Sex = Sex,
+         RelDate = as.Date(ReleaseDateTime),
+         SampYear = substr(TagID, start = 1, stop = 4)) %>%
+  filter(SampYear >  2018) %>% 
+  dplyr::select(FreqCode, PIT_ID, PulseRate, MortRate, CapLoc, RelLoc, TagType, Length, Sex, RelDate) %>% 
+  rbind(Beacon.0)
+
+write.csv(x = MasterTag.0, 
+          file = "../1_CleaningWithAbtas/Python/Data/tblMasterTagTest.csv",
+          row.names = FALSE)

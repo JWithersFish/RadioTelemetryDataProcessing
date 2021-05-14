@@ -229,7 +229,10 @@ mydyplots.count <- lapply(1:23, function(i) dygraph(xts(x = df.Rec.2 %>%
                                                           ungroup() %>%
                                                           pull(Date)),
                                                     main = paste("Beacon at ",
-                                                                 SiteNames[i], sep = " ")) %>%
+                                                                 SiteNames[i], 
+                                                                 " / ",
+                                                                 Sites[i],
+                                                                 sep = " ")) %>%
                             dyRangeSelector() %>%
                             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
                             dyAxis("y", label = "Number of Detections") %>%
@@ -251,7 +254,9 @@ mydyplots.power <- lapply(1:23, function(j) dygraph(xts(x = df.Rec.2 %>%
                                                           ungroup() %>%
                                                           pull(Date)),
                                                     main = paste("Beacon at ",
-                                                                 SiteNames[j], sep = " ")) %>%
+                                                                 SiteNames[j], 
+                                                                 " / ",
+                                                                 Sites[j], sep = " ")) %>%
                             dyRangeSelector() %>%
                             dyOptions(drawPoints = TRUE, pointSize = 2, fillGraph = FALSE) %>%
                             dyAxis("y", label = "Daily Mean Power (dB)", valueRange = c(-110, -55)) %>%
@@ -284,7 +289,8 @@ for(f in 1:length(Sites)){
           labs(x = "Date",
                y = "Daily Noise Detections",
                fill = "Power",
-               title = paste("Site: ", SiteNames[f], sep = "")) +
+               title = paste("Site: ", SiteNames[f], " / ", Sites[f],
+                             sep = "")) +
           theme_bw() +
           theme(axis.text.x = element_text(angle = 45, hjust = 1)))
 }
