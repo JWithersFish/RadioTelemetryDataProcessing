@@ -639,7 +639,7 @@ for(i in 1:length(fish)){
                  size = .1, 
                  linetype = "dashed")
     
-    ggsave(filename = paste("../Figures/PreClean/Fish", 
+    ggsave(filename = paste("../Figures/PreClean/Smolt_", 
                             fish[i], "_", tempData$Sex[1], ".png", sep = ""), 
            plot = myplot,
            width = 7, 
@@ -647,7 +647,7 @@ for(i in 1:length(fish)){
     
     
     fwrite(x = tempData,   # write each subsetted fish dataframe out to csv
-           file = paste("../Tables/PreClean/Fish", 
+           file = paste("../Tables/PreClean/Smolt_", 
                         fish[i],"_", tempData$Sex[1], # use sep ="\t" for tab delimited and "," for comma delim
                         ".csv", sep = ""), sep = ",", col.names = TRUE,
            row.names = FALSE)

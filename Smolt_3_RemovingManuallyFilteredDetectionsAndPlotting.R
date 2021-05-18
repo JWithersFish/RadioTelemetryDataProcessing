@@ -49,6 +49,8 @@ channel <- odbcDriverConnect("Driver={Microsoft Access Driver (*.mdb, *.accdb)};
 sqlTables(channel)
 
 Tags.0 <- as.data.table(sqlFetch(channel, "qry_FishList")) # Import list of tags
+Strain.0 <- as.data.table(sqlFetch(channel, "tbl_SmoltGenetics")) %>% # Import list of tags
+  mutate(TagID = substr(TagID, start = 6, 16))
 
 # Close connection to database
 odbcClose(channel)
@@ -154,7 +156,8 @@ DF.Clean.1 <- DF.Clean.0 %>%
                                       tz = "UTC"), tzone = "Etc/GMT+4"),
          sunset = with_tz(as.POSIXct(sunset, format = "%Y-%m-%dT%H:%M:%SZ",
                                      origin = "1970-01-01",
-                                     tz = "UTC"), tzone = "Etc/GMT+4"))
+                                     tz = "UTC"), tzone = "Etc/GMT+4")) %>% 
+  left_join(Strain.0, by = "TagID")
 
 
 
@@ -275,7 +278,7 @@ for(i in 1:length(fish)){
                                 max(DF.Clean.1$DetDateTime, na.rm = TRUE)),
                      breaks = pretty_breaks(breaks = 20)) +
     scale_y_continuous(
-      limits = c(0, 35),
+      limits = c(0, 50),
       name = "River Km",
       sec.axis = sec_axis(~ .,
                           name = "Site",
@@ -332,17 +335,24 @@ for(i in 1:length(fish)){
                  color = "#009E73",
                  shape = "star",
                  size = 1.75) # Add release site and time
-    } else{
+    } 
+  else if(tempData$GeneticStrain[1] == "Max Boquet"){
+  geom_point(aes(x = min(tempData$Release, na.rm = TRUE), y = 49.415475),
+             color = "#009E73",
+             shape = "star",
+             size = 1.75) # Add release site and time
+    }
+  else{
       geom_point(aes(x = min(tempData$Release, na.rm = TRUE), y = 27.93853),
                  color = "#009E73",
                  shape = "star",
                  size = 1.75)
     }  # Add release site and time
-  # geom_hline(yintercept = TribDist.1$River.Km, 
-  #            color = TribDist.1$Trib_Color, 
-  #            size = .1, 
+  # geom_hline(yintercept = TribDist.1$River.Km,
+  #            color = TribDist.1$Trib_Color,
+  #            size = .1,
   #            linetype = "solid") +
-  # geom_point(data = Tags.Rec %>% 
+  # geom_point(data = Tags.Rec %>%
   #              filter(TagID == fish[i]),
   #            aes(x = DtTmRcv, y = River.Km),
   #            color = "#E69F00",
